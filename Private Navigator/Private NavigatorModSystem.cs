@@ -27,15 +27,65 @@ namespace Private_Navigator
             return TextCommandResult.Success("Вікно відкрито.");
         }
 
+        /* private List<string> LoadPrivatesFromLog()
+         {
+             List<string> privatesList = new();
+
+             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
+             if (!File.Exists(path))
+             {
+                 capi.ShowChatMessage("Файл client-chat.log не знайдено");
+                 return privatesList;
+             }
+
+             string[] lines;
+             using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+             using (var reader = new StreamReader(fs))
+             {
+                 var content = reader.ReadToEnd();
+                 lines = content.Split('\n');
+             }
+
+             bool inPrivatesList = false;
+
+             foreach (var line in lines)
+             {
+                 if (line.Contains("участки:"))
+                 {
+                     inPrivatesList = true;
+                     continue;
+                 }
+
+                 if (inPrivatesList)
+                 {
+                     if (!line.Contains("@ 0")) break; // Кінець списку
+
+                     int colon = line.IndexOf(':');
+                     int paren = line.IndexOf('(');
+
+                     if (colon != -1 && paren != -1 && paren > colon)
+                     {
+                         string name = line.Substring(colon + 1, paren - colon - 1).Trim();
+                         if (!string.IsNullOrEmpty(name))
+                         {
+                             privatesList.Add(name);
+                         }
+                     }
+                 }
+             }
+
+             return privatesList;
+         }
+    }*/
         private List<string> LoadPrivatesFromLog()
         {
-            List<string> privatesList = new();
+            List<string> latestPrivatesList = new();
 
             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
             if (!File.Exists(path))
             {
                 capi.ShowChatMessage("Файл client-chat.log не знайдено");
-                return privatesList;
+                return latestPrivatesList;
             }
 
             string[] lines;
@@ -47,18 +97,29 @@ namespace Private_Navigator
             }
 
             bool inPrivatesList = false;
+            List<string> currentList = new();
 
             foreach (var line in lines)
             {
                 if (line.Contains("Ваши земельные участки:"))
                 {
+                    // Зустріли новий блок — скидаємо попередній
+                    currentList = new List<string>();
                     inPrivatesList = true;
                     continue;
                 }
 
                 if (inPrivatesList)
                 {
-                    if (!line.Contains("@ 0")) break; // Кінець списку
+                    if (string.IsNullOrWhiteSpace(line) || !line.Contains("("))  // Кінець списку
+                    {
+                        inPrivatesList = false;
+                        if (currentList.Count > 0)
+                        {
+                            latestPrivatesList = currentList;
+                        }
+                        continue;
+                    }
 
                     int colon = line.IndexOf(':');
                     int paren = line.IndexOf('(');
@@ -68,18 +129,22 @@ namespace Private_Navigator
                         string name = line.Substring(colon + 1, paren - colon - 1).Trim();
                         if (!string.IsNullOrEmpty(name))
                         {
-                            privatesList.Add(name);
+                            currentList.Add(name);
                         }
                     }
                 }
             }
 
-            return privatesList;
+            return latestPrivatesList;
         }
+
+
     }
     public class PrivatesGui : GuiDialog
     {
         List<string> privatesList;
+        string selectedPrivate;
+
         public PrivatesGui(ICoreClientAPI capi, List<string> privatesList) : base(capi)
         {
             this.privatesList = privatesList;
@@ -90,35 +155,79 @@ namespace Private_Navigator
         public override void OnGuiOpened()
         {
             base.OnGuiOpened();
+            BuildListMenu(); // початкове меню
+        }
 
+        void BuildListMenu()
+        {
             ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
                 .WithAlignment(EnumDialogArea.CenterMiddle)
                 .WithFixedPadding(10, 10);
 
             var composer = capi.Gui
                 .CreateCompo("privatesdialog", dialogBounds)
-                .AddDialogTitleBar("Привати", () => TryClose());
+                .AddDialogTitleBar("Список приватів", () => TryClose());
 
-            ElementBounds current = ElementBounds.Fixed(10, 40, 280, 25);
+            ElementBounds current = ElementBounds.Fixed(10, 40, 300, 30);
 
             for (int i = 0; i < privatesList.Count; i++)
             {
                 string name = privatesList[i];
-                string label = $"{i + 1}. {name}";
-
-                composer.AddSmallButton(label, () =>
+                composer.AddSmallButton($"{i + 1}. {name}", () =>
                 {
-                    capi.ShowChatMessage($"Вибрано приват: {name}");
+                    selectedPrivate = name;
+                    BuildActionMenu(name);
                     return true;
                 }, current);
 
-                current = current.BelowCopy(0, 4); // Відступ вниз
+                current = current.BelowCopy(0, 5);
             }
 
             SingleComposer = composer.Compose();
         }
 
+        void BuildActionMenu(string name)
+        {
+            // Знову створюємо новий GUI в тому ж вікні
+            ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
+                .WithAlignment(EnumDialogArea.CenterMiddle)
+                .WithFixedPadding(10, 10);
 
+            var composer = capi.Gui
+                .CreateCompo("privatedetails", dialogBounds)
+                .AddDialogTitleBar($"Дії: {name}", () => TryClose());
 
+            ElementBounds btn = ElementBounds.Fixed(10, 40, 200, 30);
+
+            composer.AddSmallButton("← Назад", () =>
+            {
+                BuildListMenu();
+                return true;
+            }, btn);
+
+            composer.AddSmallButton("Виділити", () =>
+            {
+                capi.SendChatMessage($"/land select {name}");
+                TryClose();
+                return true;
+            }, btn.BelowCopy(0, 10));
+
+            composer.AddSmallButton("Видалити", () =>
+            {
+                capi.SendChatMessage($"/land remove {name}");
+                TryClose();
+                return true;
+            }, btn.BelowCopy(0, 50));
+
+            composer.AddSmallButton("Телепорт", () =>
+            {
+                capi.SendChatMessage($"/land tp {name}");
+                TryClose();
+                return true;
+            }, btn.BelowCopy(0, 90));
+
+            SingleComposer = composer.Compose();
+        }
     }
+
 }
