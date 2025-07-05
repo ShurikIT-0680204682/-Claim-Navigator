@@ -207,7 +207,7 @@ namespace Private_Navigator
 
             composer.AddSmallButton("Виділити", () =>
             {
-                capi.SendChatMessage($"/land select {name}");
+                capi.SendChatMessage($"/land claim load {name}");
                 TryClose();
                 return true;
             }, btn.BelowCopy(0, 10));
