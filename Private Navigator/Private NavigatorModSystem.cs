@@ -144,7 +144,7 @@ namespace Private_Navigator
     {
         List<string> privatesList;
         string selectedPrivate;
-
+        int selectedIndex;
         public PrivatesGui(ICoreClientAPI capi, List<string> privatesList) : base(capi)
         {
             this.privatesList = privatesList;
@@ -173,15 +173,19 @@ namespace Private_Navigator
             for (int i = 0; i < privatesList.Count; i++)
             {
                 string name = privatesList[i];
-                composer.AddSmallButton($"{i + 1}. {name}", () =>
+                int index = i; // ← Зберігаємо поточний індекс, щоб використати в замиканні
+
+                composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
                     selectedPrivate = name;
+                    selectedIndex = index;
                     BuildActionMenu(name);
                     return true;
                 }, current);
 
                 current = current.BelowCopy(0, 5);
             }
+
 
             SingleComposer = composer.Compose();
         }
@@ -207,21 +211,21 @@ namespace Private_Navigator
 
             composer.AddSmallButton("Виділити", () =>
             {
-                capi.SendChatMessage($"/land claim load {name}");
+                capi.SendChatMessage($"/land claim load {selectedIndex}");
                 TryClose();
                 return true;
             }, btn.BelowCopy(0, 10));
 
             composer.AddSmallButton("Видалити", () =>
             {
-                capi.SendChatMessage($"/land remove {name}");
+                capi.SendChatMessage($"/land remove {selectedIndex}");
                 TryClose();
                 return true;
             }, btn.BelowCopy(0, 50));
 
             composer.AddSmallButton("Телепорт", () =>
             {
-                capi.SendChatMessage($"/land tp {name}");
+                capi.SendChatMessage($"/land tp {selectedIndex}");
                 TryClose();
                 return true;
             }, btn.BelowCopy(0, 90));
