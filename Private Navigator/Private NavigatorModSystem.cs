@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -158,22 +159,82 @@ namespace Private_Navigator
             BuildListMenu(); // початкове меню
         }
 
+        /* void BuildListMenu()
+         {
+             int buttonCount = privatesList.Count;
+             int buttonHeight = 30;
+             int verticalSpacing = 5;
+
+             int width = 320;
+             int height = 40 + (buttonCount * (buttonHeight + verticalSpacing)) + 20;
+
+             // 1. Задати фіксований розмір
+             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, width, height)
+                 .WithAlignment(EnumDialogArea.CenterMiddle)  // 2. Вирівняти по центру
+                 .WithFixedPadding(10, 10);                   // 3. Додати паддінг
+
+             var composer = capi.Gui
+                 .CreateCompo("privatesdialog", dialogBounds)
+                 .AddShadedDialogBG(ElementBounds.Fill)       // задній темний фон
+                 .AddDialogBG(ElementBounds.Fill, false)      // дерев’яна рамка
+                 .AddDialogTitleBar("Spisok private", () => TryClose());
+
+             // Перша кнопка трохи нижче заголовку
+             ElementBounds current = ElementBounds.Fixed(10, 40, 300, buttonHeight);
+
+             for (int i = 0; i < buttonCount; i++)
+             {
+                 string name = privatesList[i];
+                 int index = i;
+
+                 composer.AddSmallButton($"{index + 1}. {name}", () =>
+                 {
+                     selectedPrivate = name;
+                     selectedIndex = index;
+                     BuildActionMenu(name);
+                     return true;
+                 }, current);
+
+                 current = current.BelowCopy(0, verticalSpacing);
+             }
+
+             SingleComposer = composer.Compose();
+         }*/
         void BuildListMenu()
         {
-            ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
+            int buttonCount = privatesList.Count;
+            int buttonHeight = 30;
+            int verticalSpacing = 5;
+            int contentWidth = 300;
+
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
+            dialogHeight = Math.Min(dialogHeight, 500); // максимум висоти
+
+            // Головне вікно
+            ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
-                .WithFixedPadding(10, 10);
+                .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
+
+            // Контейнер для дочірніх елементів
+            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
+                .WithFixedPadding(10, 10)
+                .WithSizing(ElementSizing.FitToChildren);
 
             var composer = capi.Gui
                 .CreateCompo("privatesdialog", dialogBounds)
-                .AddDialogTitleBar("Список приватів", () => TryClose());
+                .AddShadedDialogBG(ElementBounds.Fill)
+                .AddDialogBG(ElementBounds.Fill, false)
+                .AddDialogTitleBar("Список приватів", () => TryClose())
+                .BeginChildElements(contentBounds);
 
-            ElementBounds current = ElementBounds.Fixed(10, 40, 300, 30);
+            // Стартові координати для кнопок
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
 
-            for (int i = 0; i < privatesList.Count; i++)
+            for (int i = 0; i < buttonCount; i++)
             {
                 string name = privatesList[i];
-                int index = i; // ← Зберігаємо поточний індекс, щоб використати в замиканні
+                int index = i;
 
                 composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
@@ -183,12 +244,19 @@ namespace Private_Navigator
                     return true;
                 }, current);
 
-                current = current.BelowCopy(0, 5);
+                current = current.BelowCopy(0, verticalSpacing);
             }
 
+            composer.EndChildElements();
 
             SingleComposer = composer.Compose();
         }
+
+
+
+
+
+
 
         void BuildActionMenu(string name)
         {
