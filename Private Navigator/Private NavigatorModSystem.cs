@@ -159,47 +159,7 @@ namespace Private_Navigator
             BuildListMenu(); // початкове меню
         }
 
-        /* void BuildListMenu()
-         {
-             int buttonCount = privatesList.Count;
-             int buttonHeight = 30;
-             int verticalSpacing = 5;
 
-             int width = 320;
-             int height = 40 + (buttonCount * (buttonHeight + verticalSpacing)) + 20;
-
-             // 1. Задати фіксований розмір
-             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, width, height)
-                 .WithAlignment(EnumDialogArea.CenterMiddle)  // 2. Вирівняти по центру
-                 .WithFixedPadding(10, 10);                   // 3. Додати паддінг
-
-             var composer = capi.Gui
-                 .CreateCompo("privatesdialog", dialogBounds)
-                 .AddShadedDialogBG(ElementBounds.Fill)       // задній темний фон
-                 .AddDialogBG(ElementBounds.Fill, false)      // дерев’яна рамка
-                 .AddDialogTitleBar("Spisok private", () => TryClose());
-
-             // Перша кнопка трохи нижче заголовку
-             ElementBounds current = ElementBounds.Fixed(10, 40, 300, buttonHeight);
-
-             for (int i = 0; i < buttonCount; i++)
-             {
-                 string name = privatesList[i];
-                 int index = i;
-
-                 composer.AddSmallButton($"{index + 1}. {name}", () =>
-                 {
-                     selectedPrivate = name;
-                     selectedIndex = index;
-                     BuildActionMenu(name);
-                     return true;
-                 }, current);
-
-                 current = current.BelowCopy(0, verticalSpacing);
-             }
-
-             SingleComposer = composer.Compose();
-         }*/
         void BuildListMenu()
         {
             int buttonCount = privatesList.Count;
@@ -253,53 +213,71 @@ namespace Private_Navigator
         }
 
 
-
-
-
-
-
         void BuildActionMenu(string name)
         {
-            // Знову створюємо новий GUI в тому ж вікні
-            ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
+            int buttonHeight = 30;
+            int verticalSpacing = 10;
+            int contentWidth = 300;
+            int buttonCount = 4;
+
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
+
+            // Основне вікно
+            ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
-                .WithFixedPadding(10, 10);
+                .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
+
+            // Вміст
+            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
+                .WithFixedPadding(10, 10)
+                .WithSizing(ElementSizing.FitToChildren);
 
             var composer = capi.Gui
                 .CreateCompo("privatedetails", dialogBounds)
-                .AddDialogTitleBar($"Дії: {name}", () => TryClose());
+                .AddShadedDialogBG(ElementBounds.Fill)
+                .AddDialogBG(ElementBounds.Fill, false)
+                .AddDialogTitleBar($"Дії: {name}", () => TryClose())
+                .BeginChildElements(contentBounds);
 
-            ElementBounds btn = ElementBounds.Fixed(10, 40, 200, 30);
+            // Кнопки
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
 
             composer.AddSmallButton("← Назад", () =>
             {
                 BuildListMenu();
                 return true;
-            }, btn);
+            }, current);
 
+            current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton("Виділити", () =>
             {
                 capi.SendChatMessage($"/land claim load {selectedIndex}");
                 TryClose();
                 return true;
-            }, btn.BelowCopy(0, 10));
+            }, current);
 
+            current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton("Видалити", () =>
             {
                 capi.SendChatMessage($"/land remove {selectedIndex}");
                 TryClose();
                 return true;
-            }, btn.BelowCopy(0, 50));
+            }, current);
 
+            current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton("Телепорт", () =>
             {
                 capi.SendChatMessage($"/land tp {selectedIndex}");
                 TryClose();
                 return true;
-            }, btn.BelowCopy(0, 90));
+            }, current);
 
+            composer.EndChildElements();
             SingleComposer = composer.Compose();
         }
+
+
     }
 
 }
