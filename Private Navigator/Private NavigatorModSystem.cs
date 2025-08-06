@@ -218,7 +218,7 @@ namespace Private_Navigator
             int buttonHeight = 30;
             int verticalSpacing = 10;
             int contentWidth = 300;
-            int buttonCount = 4;
+            int buttonCount = 7;
 
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
@@ -249,6 +249,7 @@ namespace Private_Navigator
                 return true;
             }, current);
 
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton("Виділити", () =>
             {
@@ -260,18 +261,43 @@ namespace Private_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton("Видалити", () =>
             {
-                capi.SendChatMessage($"/land remove {selectedIndex}");
+                capi.SendChatMessage($"/land free {selectedIndex}");
+                capi.SendChatMessage($"/land free {selectedIndex} confirm");
                 TryClose();
                 return true;
             }, current);
 
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Телепорт", () =>
+            composer.AddSmallButton("All доступ", () =>
             {
-                capi.SendChatMessage($"/land tp {selectedIndex}");
+                capi.SendChatMessage($"/land claim load {selectedIndex}");
+                capi.SendChatMessage($"/land claim allowuseeveryone true");
+                capi.SendChatMessage($"/land claim save {name}");
                 TryClose();
                 return true;
             }, current);
+
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton("Nothing доступ", () =>
+            {
+                capi.SendChatMessage($"/land claim load {selectedIndex}");
+                capi.SendChatMessage($"/land claim allowuseeveryone false");
+                capi.SendChatMessage($"/land claim save {name}");
+                TryClose();
+                return true;
+            }, current);
+
+
+
+            /* current = current.BelowCopy(0, verticalSpacing);
+             composer.AddSmallButton("Добавление игрока", () =>
+             {
+                 capi.SendChatMessage($"/land claim load {selectedIndex}");
+                 capi.SendChatMessage($"/land claim load {selectedIndex}");
+                 TryClose();
+                 return true;
+             }, current);*/
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
