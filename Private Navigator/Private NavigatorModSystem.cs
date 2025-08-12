@@ -11,77 +11,43 @@ namespace Private_Navigator
     {
 
         ICoreClientAPI capi;
-
+        PrivatesGui currentGui;
 
         public override void StartClientSide(ICoreClientAPI api)
         {
             capi = api;
-            capi.ChatCommands.Create("privates")
-                .HandleWith(privates);
-        }
 
-        private TextCommandResult privates(TextCommandCallingArgs args)
+            capi.Input.RegisterHotKey("PrivateNavigatorKey", "відкрити Private Navigator", GlKeys.P, HotkeyType.GUIOrOtherControls, ctrlPressed: true);
+            capi.Input.SetHotKeyHandler("PrivateNavigatorKey", OnPrivateNavigator);
+
+        }
+        private bool OnPrivateNavigator(KeyCombination comb)
         {
-            List<string> list = LoadPrivatesFromLog();
-            PrivatesGui gui = new PrivatesGui(capi, list);
-            gui.TryOpen();
-            return TextCommandResult.Success("Вікно відкрито.");
+            // Якщо GUI вже є і він відкритий → закрити
+            if (currentGui != null && currentGui.IsOpened())
+            {
+                currentGui.TryClose();
+                return true;
+            }
+
+            // Інакше створити новий і відкрити         
+            capi.SendChatMessage("/land list");
+
+            capi.Event.RegisterCallback(dt =>
+            {
+                // Створюємо таймер, який через 0.5 секунди відкриє GUI (щоб лог встиг оновитись)         
+                List<string> list = LoadPrivatesFromLog();
+                currentGui = new PrivatesGui(capi, list);
+                currentGui.TryOpen();
+
+            }, 500);
+            return true;
         }
 
-        /* private List<string> LoadPrivatesFromLog()
-         {
-             List<string> privatesList = new();
 
-             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
-             if (!File.Exists(path))
-             {
-                 capi.ShowChatMessage("Файл client-chat.log не знайдено");
-                 return privatesList;
-             }
-
-             string[] lines;
-             using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-             using (var reader = new StreamReader(fs))
-             {
-                 var content = reader.ReadToEnd();
-                 lines = content.Split('\n');
-             }
-
-             bool inPrivatesList = false;
-
-             foreach (var line in lines)
-             {
-                 if (line.Contains("участки:"))
-                 {
-                     inPrivatesList = true;
-                     continue;
-                 }
-
-                 if (inPrivatesList)
-                 {
-                     if (!line.Contains("@ 0")) break; // Кінець списку
-
-                     int colon = line.IndexOf(':');
-                     int paren = line.IndexOf('(');
-
-                     if (colon != -1 && paren != -1 && paren > colon)
-                     {
-                         string name = line.Substring(colon + 1, paren - colon - 1).Trim();
-                         if (!string.IsNullOrEmpty(name))
-                         {
-                             privatesList.Add(name);
-                         }
-                     }
-                 }
-             }
-
-             return privatesList;
-         }
-    }*/
         private List<string> LoadPrivatesFromLog()
         {
             List<string> latestPrivatesList = new();
-
             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
             if (!File.Exists(path))
             {
@@ -188,13 +154,20 @@ namespace Private_Navigator
                 .AddDialogTitleBar("Список приватів", () => TryClose())
                 .BeginChildElements(contentBounds);
 
+
+            /*var scrool = capi.Gui
+                .CreateCompo("privatesdialog", dialogBounds)
+                .AddVerticalScrollbar(  ,contentBounds); */
+
             // Стартові координати для кнопок
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
 
+            //кнопка приватів   
             for (int i = 0; i < buttonCount; i++)
             {
                 string name = privatesList[i];
                 int index = i;
+
 
                 composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
@@ -254,6 +227,7 @@ namespace Private_Navigator
             composer.AddSmallButton("Виділити", () =>
             {
                 capi.SendChatMessage($"/land claim load {selectedIndex}");
+
                 TryClose();
                 return true;
             }, current);
@@ -263,6 +237,7 @@ namespace Private_Navigator
             {
                 capi.SendChatMessage($"/land free {selectedIndex}");
                 capi.SendChatMessage($"/land free {selectedIndex} confirm");
+                capi.SendChatMessage($"/land list");
                 TryClose();
                 return true;
             }, current);
