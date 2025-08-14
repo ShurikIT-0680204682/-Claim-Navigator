@@ -30,9 +30,7 @@ namespace Private_Navigator
                 return true;
             }
 
-            // Інакше створити новий і відкрити         
             capi.SendChatMessage("/land list");
-
             capi.Event.RegisterCallback(dt =>
             {
                 // Створюємо таймер, який через 0.5 секунди відкриє GUI (щоб лог встиг оновитись)         
@@ -126,6 +124,30 @@ namespace Private_Navigator
         }
 
 
+        float scrollbarPos = 0f;
+        ElementBounds listClipBounds;
+        ElementBounds listContentBounds;
+        int listTotalHeight;
+        int listMaxHeight;
+        const string ScrollbarKey = "privatescrollbar";
+
+        private void OnScrollChanged(float val)
+        {
+            scrollbarPos = val;
+
+            int scrollRange = Math.Max(0, listTotalHeight - listMaxHeight);
+
+            // Якщо val > 1 — вважаємо, що це пікселі; інакше — нормалізоване 0..1
+            float offset = (val > 1f) ? val : (val * scrollRange);
+
+            if (listContentBounds != null)
+            {
+                listContentBounds.fixedY = -(int)offset;
+                listContentBounds.CalcWorldBounds();
+            }
+        }
+
+
         void BuildListMenu()
         {
             int buttonCount = privatesList.Count;
@@ -133,41 +155,43 @@ namespace Private_Navigator
             int verticalSpacing = 5;
             int contentWidth = 300;
 
-            int dialogWidth = contentWidth + 40;
-            int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
-            dialogHeight = Math.Min(dialogHeight, 500); // максимум висоти
+            int visibleRows = 3;
+            listMaxHeight = visibleRows * (buttonHeight + verticalSpacing);
 
-            // Головне вікно
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + listMaxHeight;
+
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
                 .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
 
-            // Контейнер для дочірніх елементів
-            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
-                .WithFixedPadding(10, 10)
-                .WithSizing(ElementSizing.FitToChildren);
+            listClipBounds = ElementBounds.Fixed(0, 40, contentWidth, listMaxHeight)
+                .WithFixedPadding(10, 10);
+
+            int scrollbarWidth = 12;
+            ElementBounds scrollbarBounds = ElementBounds.Fixed(contentWidth - scrollbarWidth, 0, scrollbarWidth, listMaxHeight);
+
+            listTotalHeight = buttonCount * (buttonHeight + verticalSpacing);
 
             var composer = capi.Gui
                 .CreateCompo("privatesdialog", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
                 .AddDialogTitleBar("Список приватів", () => TryClose())
-                .BeginChildElements(contentBounds);
 
+                .BeginChildElements(listClipBounds)
+                    .AddVerticalScrollbar(OnScrollChanged, scrollbarBounds, ScrollbarKey)
+                    .BeginClip(ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listMaxHeight))
+                        .BeginChildElements(
+                            listContentBounds = ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listTotalHeight)
+                        );
 
-            /*var scrool = capi.Gui
-                .CreateCompo("privatesdialog", dialogBounds)
-                .AddVerticalScrollbar(  ,contentBounds); */
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - scrollbarWidth - 20, buttonHeight);
 
-            // Стартові координати для кнопок
-            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
-
-            //кнопка приватів   
             for (int i = 0; i < buttonCount; i++)
             {
                 string name = privatesList[i];
                 int index = i;
-
 
                 composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
@@ -180,10 +204,25 @@ namespace Private_Navigator
                 current = current.BelowCopy(0, verticalSpacing);
             }
 
-            composer.EndChildElements();
+            composer.EndChildElements(); // закриваємо внутрішній контейнер
+            composer.EndClip();          // вихід з clip-зони
+            composer.EndChildElements(); // область зі скролом
 
             SingleComposer = composer.Compose();
+
+            var sb = SingleComposer.GetScrollbar(ScrollbarKey);
+            if (sb != null)
+            {
+                sb.SetHeights(listMaxHeight, listTotalHeight);
+                sb.CurrentYPosition = 0;
+
+                OnScrollChanged(sb.CurrentYPosition);
+            }
+
         }
+
+
+
 
 
         void BuildActionMenu(string name)
@@ -277,8 +316,6 @@ namespace Private_Navigator
             composer.EndChildElements();
             SingleComposer = composer.Compose();
         }
-
-
     }
-
 }
+
