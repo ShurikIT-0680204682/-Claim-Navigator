@@ -1,0 +1,16 @@
+{
+    "search-client-log": "Ваші ділянки:",
+    "title-buildlistmenu": "Список ділянок",
+    "title-actionmenu": "Дії з: {0}",
+    "title-submenuplayeraccess": "Доступ гравця до ділянки: {0}",
+    "title-submenugeneralaccessu": "Доступ для всіх гравців: {0}",
+    "back": "← Назад",
+    "аllocate-private": "Виділити",
+    "delete-private": "Видалити",
+    "general-private": "Загальний доступ",
+    "player-private": "Доступ гравцю",
+    "player-add": "Прийняти",
+    "player-delete": "Вигнати",
+    "access-all": "Аll доступ",
+    "access-nothing": "Nothing доступ"
+}

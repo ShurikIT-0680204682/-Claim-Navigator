@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 
 
 namespace Private_Navigator
@@ -16,7 +17,7 @@ namespace Private_Navigator
         public override void StartClientSide(ICoreClientAPI api)
         {
             capi = api;
-
+            // Реєстрація гарячої клавіші (CTRL + P) для відкриття GUI
             capi.Input.RegisterHotKey("PrivateNavigatorKey", "відкрити Private Navigator", GlKeys.P, HotkeyType.GUIOrOtherControls, ctrlPressed: true);
             capi.Input.SetHotKeyHandler("PrivateNavigatorKey", OnPrivateNavigator);
 
@@ -47,11 +48,11 @@ namespace Private_Navigator
         {
             List<string> latestPrivatesList = new();
             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
-            if (!File.Exists(path))
+            /*if (!File.Exists(path))
             {
                 capi.ShowChatMessage("Файл client-chat.log не знайдено");
                 return latestPrivatesList;
-            }
+            }*/
 
             string[] lines;
             using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -66,7 +67,7 @@ namespace Private_Navigator
 
             foreach (var line in lines)
             {
-                if (line.Contains("Ваши земельные участки:"))
+                if (line.Contains(Lang.Get("privatenavigator:search-client-log")))
                 {
                     // Зустріли новий блок — скидаємо попередній
                     currentList = new List<string>();
@@ -107,9 +108,11 @@ namespace Private_Navigator
     }
     public class PrivatesGui : GuiDialog
     {
-        List<string> privatesList;
-        string selectedPrivate;
-        int selectedIndex;
+        List<string> privatesList;// Список приватів (назви, отримані з логу)
+        string selectedPrivate;    // Поточний вибраний приват
+        int selectedIndex;         // Індекс вибраного привату в списку
+
+        //Конструктор, зберігає список для відображення
         public PrivatesGui(ICoreClientAPI capi, List<string> privatesList) : base(capi)
         {
             this.privatesList = privatesList;
@@ -124,15 +127,17 @@ namespace Private_Navigator
         }
 
 
-        float scrollbarPos = 0f;
-        ElementBounds listClipBounds;
-        ElementBounds listContentBounds;
-        int listTotalHeight;
-        int listMaxHeight;
-        const string ScrollbarKey = "privatescrollbar";
+        // Змінні для роботи скролу списку
+        float scrollbarPos = 0f;            // Позиція скролу
+        ElementBounds listClipBounds;       // Область, у якій обрізається вміст при прокрутці
+        ElementBounds listContentBounds;    // Повна область з усіма елементами списку
+        int listTotalHeight;                // Висота всього списку (включно з невидимою частиною)
+        int listMaxHeight;                  // Максимальна висота області показу
+        const string ScrollbarKey = "privatescrollbar"; // ID скролбара
 
         private void OnScrollChanged(float val)
         {
+            // Оновлюємо позицію вмісту при прокрутці
             scrollbarPos = val;
 
             int scrollRange = Math.Max(0, listTotalHeight - listMaxHeight);
@@ -147,45 +152,49 @@ namespace Private_Navigator
             }
         }
 
-        //меню приватів
+        // ===================== ГОЛОВНЕ МЕНЮ СПИСКУ ПРИВАТІВ =====================
         void BuildListMenu()
         {
-            int buttonCount = privatesList.Count;
-            int buttonHeight = 30;
-            int verticalSpacing = 5;
-            int contentWidth = 300;
+            int buttonCount = privatesList.Count; // Кількість кнопок = кількість приватів
+            int buttonHeight = 30;                // Висота однієї кнопки
+            int verticalSpacing = 5;              // Відстань між кнопками
+            int contentWidth = 300;               // Ширина області зі списком
+            int visibleRows = 10;                 // Скільки рядків видно без скролу
 
-            int visibleRows = 3;
-            listMaxHeight = visibleRows * (buttonHeight + verticalSpacing);
+            listMaxHeight = visibleRows * (buttonHeight + verticalSpacing); // Висота зони показу
 
-            int dialogWidth = contentWidth + 40;
-            int dialogHeight = 60 + listMaxHeight;
+            int dialogWidth = contentWidth + 40;  // Загальна ширина вікна
+            int dialogHeight = 60 + listMaxHeight;// Загальна висота вікна
 
+            // Межі діалогу (центрування на екрані)
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
                 .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
 
+            // Зона списку (clip — усе, що виходить за межі, не показується)
             listClipBounds = ElementBounds.Fixed(0, 40, contentWidth, listMaxHeight)
                 .WithFixedPadding(10, 10);
 
-            int scrollbarWidth = 12;
+            int scrollbarWidth = 12; // Ширина скролбара
             ElementBounds scrollbarBounds = ElementBounds.Fixed(contentWidth - scrollbarWidth, 0, scrollbarWidth, listMaxHeight);
 
-            listTotalHeight = buttonCount * (buttonHeight + verticalSpacing);
+            listTotalHeight = buttonCount * (buttonHeight + verticalSpacing); // Повна висота всіх кнопок
 
+            // Створюємо GUI-композер
             var composer = capi.Gui
                 .CreateCompo("privatesdialog", dialogBounds)
-                .AddShadedDialogBG(ElementBounds.Fill)
-                .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar("Список приватів", () => TryClose())
+                .AddShadedDialogBG(ElementBounds.Fill) // Темний фон
+                .AddDialogBG(ElementBounds.Fill, false) // Світлий фон діалогу
+                .AddDialogTitleBar(Lang.Get("privatenavigator:title-buildlistmenu"), () => TryClose()) // Заголовок
 
                 .BeginChildElements(listClipBounds)
-                    .AddVerticalScrollbar(OnScrollChanged, scrollbarBounds, ScrollbarKey)
+                    .AddVerticalScrollbar(OnScrollChanged, scrollbarBounds, ScrollbarKey) // Додаємо скрол
                     .BeginClip(ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listMaxHeight))
                         .BeginChildElements(
                             listContentBounds = ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listTotalHeight)
                         );
 
+            // Додаємо кнопки з назвами приватів
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - scrollbarWidth - 20, buttonHeight);
 
             for (int i = 0; i < buttonCount; i++)
@@ -195,42 +204,37 @@ namespace Private_Navigator
 
                 composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
-                    selectedPrivate = name;
-                    selectedIndex = index;
-                    BuildActionMenu(name);
+                    selectedPrivate = name; // Запам'ятовуємо вибраний приват
+                    selectedIndex = index;  // Запам'ятовуємо його індекс
+                    ActionMenu(name);       // Переходимо до підменю
                     return true;
                 }, current);
 
-                current = current.BelowCopy(0, verticalSpacing);
+                current = current.BelowCopy(0, verticalSpacing); // Переносимо позицію для наступної кнопки
             }
 
-            composer.EndChildElements(); // закриваємо внутрішній контейнер
-            composer.EndClip();          // вихід з clip-зони
-            composer.EndChildElements(); // область зі скролом
-
+            // Завершення формування GUI
+            composer.EndChildElements();
+            composer.EndClip();
+            composer.EndChildElements();
             SingleComposer = composer.Compose();
 
+            // Налаштовуємо скролбар
             var sb = SingleComposer.GetScrollbar(ScrollbarKey);
             if (sb != null)
             {
                 sb.SetHeights(listMaxHeight, listTotalHeight);
                 sb.CurrentYPosition = 0;
-
                 OnScrollChanged(sb.CurrentYPosition);
             }
-
         }
 
-
-
-
-        //підменю дій з приватами
-        void BuildActionMenu(string name)
+        // ===================== ПІДМЕНЮ ДІЙ З ПРИВАТОМ =====================
+        void ActionMenu(string name)
         {
-            int buttonHeight = 30;
-            int verticalSpacing = 10;
+            int buttonHeight = 30;  // Висота однієї кнопки
+            int verticalSpacing = 10;  // Відстань між кнопками
             int contentWidth = 300;
-            int buttonCount = 7;
 
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
@@ -249,13 +253,13 @@ namespace Private_Navigator
                 .CreateCompo("privatedetails", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar($"Дії: {name}", () => TryClose())
+                .AddDialogTitleBar(Lang.Get("privatenavigator:title-actionmenu", name), () => TryClose())
                 .BeginChildElements(contentBounds);
 
             // Кнопки
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
 
-            composer.AddSmallButton("← Назад", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:back"), () =>
             {
                 BuildListMenu();
                 return true;
@@ -263,7 +267,7 @@ namespace Private_Navigator
 
 
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Виділити", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:аllocate-private"), () =>
             {
                 capi.SendChatMessage($"/land claim load {selectedIndex}");
 
@@ -272,7 +276,7 @@ namespace Private_Navigator
             }, current);
 
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Видалити", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:delete-private"), () =>
             {
                 capi.SendChatMessage($"/land free {selectedIndex}");
                 capi.SendChatMessage($"/land free {selectedIndex} confirm");
@@ -282,32 +286,16 @@ namespace Private_Navigator
             }, current);
 
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("All доступ", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:general-private"), () =>
             {
-                capi.SendChatMessage($"/land claim load {selectedIndex}");
-                capi.SendChatMessage($"/land claim allowuseeveryone true");
-                capi.SendChatMessage($"/land claim save {name}");
-                TryClose();
+                SubmenuGeneralAccessu(name);
                 return true;
             }, current);
 
-
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Nothing доступ", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:player-private"), () =>
             {
-                capi.SendChatMessage($"/land claim load {selectedIndex}");
-                capi.SendChatMessage($"/land claim allowuseeveryone false");
-                capi.SendChatMessage($"/land claim save {name}");
-                TryClose();
-                return true;
-            }, current);
-
-
-
-            current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Добавление игрока", () =>
-            {
-                BuildPlayerManageMenu(name);
+                SubmenuPlayerAccess(name);
                 return true;
             }, current);
 
@@ -315,7 +303,78 @@ namespace Private_Navigator
             SingleComposer = composer.Compose();
         }
 
-        void BuildPlayerManageMenu(string name)
+        // ===================== ПІДМЕНЮ ДОБАВИТИ ГРАВЦЯ В ПРИВАТ =====================
+        void SubmenuPlayerAccess(string name)
+        {
+            int buttonHeight = 30;  // Висота однієї кнопки
+            int verticalSpacing = 10;
+            int contentWidth = 300;
+            int buttonNum = 4;
+
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + 2 кнопки
+
+            ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
+                .WithAlignment(EnumDialogArea.CenterMiddle)
+                .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
+
+            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
+                .WithFixedPadding(10, 10)
+                .WithSizing(ElementSizing.FitToChildren);
+
+            var composer = capi.Gui
+                .CreateCompo("playermanage", dialogBounds)
+                .AddShadedDialogBG(ElementBounds.Fill)
+                .AddDialogBG(ElementBounds.Fill, false)
+                .AddDialogTitleBar(Lang.Get("privatenavigator:title-submenuplayeraccess", name), () => TryClose())
+                .BeginChildElements(contentBounds);
+
+            // Кнопка назад
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
+            composer.AddSmallButton(Lang.Get("privatenavigator:back"), () =>
+            {
+                ActionMenu(name);
+                return true;
+            }, current);
+
+            // Поле для вводу
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddTextInput(current, null, CairoFont.TextInput(), "playerName");
+
+            // Кнопка добавити
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("privatenavigator:player-add"), () =>
+            {
+                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+                    capi.SendChatMessage($"/land claim allowuse {playerName} true");
+                    capi.SendChatMessage($"/land claim save {name}");
+                }
+                return true;
+            }, current);
+
+            // Кнопка видалити
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("privatenavigator:player-delete"), () =>
+            {
+                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+                    capi.SendChatMessage($"/land claim allowuse {playerName} false");
+                    capi.SendChatMessage($"/land claim save {name}");
+                }
+                return true;
+            }, current);
+
+            composer.EndChildElements();
+            SingleComposer = composer.Compose();
+        }
+
+        // ===================== ПІДМЕНЮ ДІЙ ЗАГАЛЬНИЙ ДОСТУП ДО ПРИВАТУ =====================
+        void SubmenuGeneralAccessu(string name)
         {
             int buttonHeight = 30;
             int verticalSpacing = 10;
@@ -337,46 +396,36 @@ namespace Private_Navigator
                 .CreateCompo("playermanage", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar($"Дії з гравцями: {name}", () => TryClose())
+                .AddDialogTitleBar(Lang.Get("privatenavigator:title-submenugeneralaccessu", name), () => TryClose())
                 .BeginChildElements(contentBounds);
 
             // Кнопка назад
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
-            composer.AddSmallButton("← Назад", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:back"), () =>
             {
-                BuildActionMenu(name);
+                ActionMenu(name);
                 return true;
             }, current);
-
-            // Поле для вводу
-            current = current.BelowCopy(0, verticalSpacing);
-            composer.AddTextInput(current, null, CairoFont.TextInput(), "playerName");
 
             // Кнопка добавити
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Добавити", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:access-all"), () =>
             {
-                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
-                if (!string.IsNullOrWhiteSpace(playerName))
-                {
-                    capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim allowuse {playerName} true");
-                    capi.SendChatMessage($"/land claim save {name}");
-                }
+                SubmenuGeneralAccessu(name);
+                capi.SendChatMessage($"/land claim load {selectedIndex}");
+                capi.SendChatMessage($"/land claim allowuseeveryone true");
+                capi.SendChatMessage($"/land claim save {name}");
+                TryClose();
                 return true;
             }, current);
 
-            // Кнопка видалити
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton("Видалити", () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:access-nothing"), () =>
             {
-                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
-                if (!string.IsNullOrWhiteSpace(playerName))
-                {
-                    capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim allowuse {playerName} false");
-                    capi.SendChatMessage($"/land claim save {name}");
-                }
+                capi.SendChatMessage($"/land claim load {selectedIndex}");
+                capi.SendChatMessage($"/land claim allowuseeveryone false");
+                capi.SendChatMessage($"/land claim save {name}");
+                TryClose();
                 return true;
             }, current);
 

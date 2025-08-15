@@ -1,13 +1,11 @@
 {
-    "type": "code",
-    "modid": "private navigator",
+    "type": "Code",
+    "modid": "privatenavigator",
     "name": "Private_Navigator",
     "authors": [
-        "Unknown"
+        "ShuriKIT"
     ],
-    "description": "To be added",
-    "version": "1.0.0",
-    "dependencies": {
-        "game": ""
-    }
+    "side": "Client",
+    "description": "Convenient interface for working with private areas.",
+    "version": "1.0.0"
 }

@@ -1,0 +1,16 @@
+{
+    "search-client-log": "Your land claims:",
+    "title-buildlistmenu": "List of privates",
+    "title-actionmenu": "Actions with: {0}",
+    "title-submenuplayeraccess": "Player access to private: {0}",
+    "title-submenugeneralaccessu": "Access for all players: {0} ",
+    "back": "← Back",
+    "аllocate-private": "Аllocate private",
+    "delete-private": "Delete private",
+    "general-private": "General access",
+    "player-private": "Player access",
+    "player-add": "Add player",
+    "player-delete": "Delete player",
+    "access-all": "Аll access",
+    "access-nothing": "Nothing access"
+}
