@@ -147,7 +147,7 @@ namespace Private_Navigator
             }
         }
 
-
+        //меню приватів
         void BuildListMenu()
         {
             int buttonCount = privatesList.Count;
@@ -224,7 +224,7 @@ namespace Private_Navigator
 
 
 
-
+        //підменю дій з приватами
         void BuildActionMenu(string name)
         {
             int buttonHeight = 30;
@@ -304,18 +304,87 @@ namespace Private_Navigator
 
 
 
-            /* current = current.BelowCopy(0, verticalSpacing);
-             composer.AddSmallButton("Добавление игрока", () =>
-             {
-                 capi.SendChatMessage($"/land claim load {selectedIndex}");
-                 capi.SendChatMessage($"/land claim load {selectedIndex}");
-                 TryClose();
-                 return true;
-             }, current);*/
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton("Добавление игрока", () =>
+            {
+                BuildPlayerManageMenu(name);
+                return true;
+            }, current);
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
         }
+
+        void BuildPlayerManageMenu(string name)
+        {
+            int buttonHeight = 30;
+            int verticalSpacing = 10;
+            int contentWidth = 300;
+            int buttonNum = 4;
+
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + 2 кнопки
+
+            ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
+                .WithAlignment(EnumDialogArea.CenterMiddle)
+                .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
+
+            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
+                .WithFixedPadding(10, 10)
+                .WithSizing(ElementSizing.FitToChildren);
+
+            var composer = capi.Gui
+                .CreateCompo("playermanage", dialogBounds)
+                .AddShadedDialogBG(ElementBounds.Fill)
+                .AddDialogBG(ElementBounds.Fill, false)
+                .AddDialogTitleBar($"Дії з гравцями: {name}", () => TryClose())
+                .BeginChildElements(contentBounds);
+
+            // Кнопка назад
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
+            composer.AddSmallButton("← Назад", () =>
+            {
+                BuildActionMenu(name);
+                return true;
+            }, current);
+
+            // Поле для вводу
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddTextInput(current, null, CairoFont.TextInput(), "playerName");
+
+            // Кнопка добавити
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton("Добавити", () =>
+            {
+                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+                    capi.SendChatMessage($"/land claim allowuse {playerName} true");
+                    capi.SendChatMessage($"/land claim save {name}");
+                }
+                return true;
+            }, current);
+
+            // Кнопка видалити
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton("Видалити", () =>
+            {
+                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+                    capi.SendChatMessage($"/land claim allowuse {playerName} false");
+                    capi.SendChatMessage($"/land claim save {name}");
+                }
+                return true;
+            }, current);
+
+            composer.EndChildElements();
+            SingleComposer = composer.Compose();
+        }
+
     }
 }
+
 
