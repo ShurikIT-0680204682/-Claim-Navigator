@@ -1,5 +1,6 @@
 {
     "search-client-log": "Ваши земельные участки:",
+    "text-in-settings": "Открыть Private Navigator",
     "title-buildlistmenu": "Список приватов",
     "title-actionmenu": "Действия с: {0}",
     "title-submenuplayeraccess": "Доступ игроку к привату: {0}",
@@ -9,7 +10,8 @@
     "delete-private": "Удалить",
     "general-private": "Общий доступ",
     "player-private": "Доступ игроку",
-    "player-add": "Принять",
+    "player-all": "All принять игрока",
+    "player-use": "Use принять игрока",
     "player-delete": "Изгнать",
     "access-all": "Аll доступ",
     "access-nothing": "Nothing доступ"

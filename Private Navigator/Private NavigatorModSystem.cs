@@ -18,7 +18,7 @@ namespace Private_Navigator
         {
             capi = api;
             // Реєстрація гарячої клавіші (CTRL + P) для відкриття GUI
-            capi.Input.RegisterHotKey("PrivateNavigatorKey", "відкрити Private Navigator", GlKeys.P, HotkeyType.GUIOrOtherControls, ctrlPressed: true);
+            capi.Input.RegisterHotKey("PrivateNavigatorKey", Lang.Get("privatenavigator:text-in-settings"), GlKeys.P, HotkeyType.GUIOrOtherControls, ctrlPressed: true);
             capi.Input.SetHotKeyHandler("PrivateNavigatorKey", OnPrivateNavigator);
 
         }
@@ -48,11 +48,22 @@ namespace Private_Navigator
         {
             List<string> latestPrivatesList = new();
             string path = Path.Combine(capi.GetOrCreateDataPath("Logs"), "client-chat.log");
-            /*if (!File.Exists(path))
+
+            // Ключові фрази для визначення початку списку (різні мови)
+            string[] searchMarkers = new string[]
+            {
+                Lang.Get("privatenavigator:search-client-log"),
+                "Your land claims:",    // англійська
+                "Ваши земельные участки:",   // російська
+                "Ваші ділянки:"   // українська
+       
+            };
+
+            if (!File.Exists(path))
             {
                 capi.ShowChatMessage("Файл client-chat.log не знайдено");
                 return latestPrivatesList;
-            }*/
+            }
 
             string[] lines;
             using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -67,12 +78,16 @@ namespace Private_Navigator
 
             foreach (var line in lines)
             {
-                if (line.Contains(Lang.Get("privatenavigator:search-client-log")))
+                // Перевіряємо кожен можливий маркер
+                foreach (var marker in searchMarkers)
                 {
-                    // Зустріли новий блок — скидаємо попередній
-                    currentList = new List<string>();
-                    inPrivatesList = true;
-                    continue;
+                    if (!string.IsNullOrEmpty(marker) && line.Contains(marker))
+                    {
+                        // Зустріли новий блок — скидаємо попередній
+                        currentList = new List<string>();
+                        inPrivatesList = true;
+                        goto ContinueOuter; // вихід з вкладеного foreach і перехід на наступний рядок
+                    }
                 }
 
                 if (inPrivatesList)
@@ -99,10 +114,13 @@ namespace Private_Navigator
                         }
                     }
                 }
+
+            ContinueOuter:;
             }
 
             return latestPrivatesList;
         }
+
 
 
     }
@@ -234,7 +252,8 @@ namespace Private_Navigator
         {
             int buttonHeight = 30;  // Висота однієї кнопки
             int verticalSpacing = 10;  // Відстань між кнопками
-            int contentWidth = 300;
+            int contentWidth = 300; // Ширина області зі списком
+            int buttonCount = 7;
 
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
@@ -309,7 +328,7 @@ namespace Private_Navigator
             int buttonHeight = 30;  // Висота однієї кнопки
             int verticalSpacing = 10;
             int contentWidth = 300;
-            int buttonNum = 4;
+            int buttonNum = 5;
 
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + 2 кнопки
@@ -343,13 +362,13 @@ namespace Private_Navigator
 
             // Кнопка добавити
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("privatenavigator:player-add"), () =>
+            composer.AddSmallButton(Lang.Get("privatenavigator:player-use"), () =>
             {
                 string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
                 if (!string.IsNullOrWhiteSpace(playerName))
                 {
                     capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim allowuse {playerName} true");
+                    capi.SendChatMessage($"/land claim grant {playerName} use");
                     capi.SendChatMessage($"/land claim save {name}");
                 }
                 return true;
@@ -357,13 +376,26 @@ namespace Private_Navigator
 
             // Кнопка видалити
             current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("privatenavigator:player-all"), () =>
+            {
+                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+                    capi.SendChatMessage($"/land claim grant {playerName} all");
+                    capi.SendChatMessage($"/land claim save {name}");
+                }
+                return true;
+            }, current);
+
+            current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("privatenavigator:player-delete"), () =>
             {
                 string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
                 if (!string.IsNullOrWhiteSpace(playerName))
                 {
                     capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim allowuse {playerName} false");
+                    capi.SendChatMessage($"/land claim revoke {playerName}");
                     capi.SendChatMessage($"/land claim save {name}");
                 }
                 return true;
