@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -144,7 +145,14 @@ namespace Claim_Navigator
             BuildListMenu(); // початкове меню
         }
 
-
+        private async Task SendCommandsAsync(params string[] commands)
+        {
+            foreach (var cmd in commands)
+            {
+                capi.SendChatMessage(cmd);
+                await Task.Delay(1500); // невелика пауза між командами
+            }
+        }
         // Змінні для роботи скролу списку
         float scrollbarPos = 0f;            // Позиція скролу
         ElementBounds listClipBounds;       // Область, у якій обрізається вміст при прокрутці
@@ -297,9 +305,11 @@ namespace Claim_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:delete-claim"), () =>
             {
-                capi.SendChatMessage($"/land free {selectedIndex}");
-                capi.SendChatMessage($"/land free {selectedIndex} confirm");
-                capi.SendChatMessage($"/land list");
+                _ = SendCommandsAsync(
+                  $"/land free {selectedIndex}",
+                  $"/land free {selectedIndex} confirm",
+                  $"/land claim save {name}"
+                );
                 TryClose();
                 return true;
             }, current);
@@ -322,7 +332,12 @@ namespace Claim_Navigator
             SingleComposer = composer.Compose();
         }
 
+
+
+
+
         // ===================== ПІДМЕНЮ ДОБАВИТИ ГРАВЦЯ В ПРИВАТ =====================
+        string playerNameBuffer = "";
         void SubmenuPlayerAccess(string name)
         {
             int buttonHeight = 30;  // Висота однієї кнопки
@@ -331,7 +346,7 @@ namespace Claim_Navigator
             int buttonNum = 5;
 
             int dialogWidth = contentWidth + 40;
-            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + 2 кнопки
+            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
 
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
@@ -340,6 +355,7 @@ namespace Claim_Navigator
             ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
                 .WithFixedPadding(10, 10)
                 .WithSizing(ElementSizing.FitToChildren);
+
 
             var composer = capi.Gui
                 .CreateCompo("playermanage", dialogBounds)
@@ -356,54 +372,83 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
-            // Поле для вводу
+            // Поле для вводу (оновлюємо буфер при кожній зміні)
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddTextInput(current, null, CairoFont.TextInput(), "playerName");
+            composer.AddTextInput(
+                current,
+                (txt) => { playerNameBuffer = txt; },   // <-- важливо: зберігаємо введене
+                CairoFont.TextInput(),
+                "playerName"
+            );
 
-            // Кнопка добавити
+            // Допоміжна функція для безпечного читання імені
+            string ReadPlayerName()
+            {
+                string val = playerNameBuffer;
+                if (string.IsNullOrWhiteSpace(val))
+                {
+                    // підстраховка: читаємо безпосередньо з елемента
+                    val = SingleComposer?.GetTextInput("playerName")?.GetText() ?? "";
+                }
+                return val.Trim();
+            }
+
+            // Кнопка "use"
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-use"), () =>
             {
-                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                string playerName = ReadPlayerName();
                 if (!string.IsNullOrWhiteSpace(playerName))
                 {
-                    capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim grant {playerName} use");
-                    capi.SendChatMessage($"/land claim save {name}");
+
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grant {playerName} use",
+                        $"/land claim save {name}"
+                    );
                 }
+                TryClose();
                 return true;
             }, current);
 
-            // Кнопка видалити
+            // Кнопка "all"
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-all"), () =>
             {
-                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                string playerName = ReadPlayerName();
                 if (!string.IsNullOrWhiteSpace(playerName))
                 {
-                    capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim grant {playerName} all");
-                    capi.SendChatMessage($"/land claim save {name}");
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grant {playerName} all",
+                        $"/land claim save {name}"
+                    );
                 }
+                TryClose();
                 return true;
             }, current);
 
+            // Кнопка "revoke"
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-delete"), () =>
             {
-                string playerName = SingleComposer.GetTextInput("playerName")?.Text ?? "";
+                string playerName = ReadPlayerName();
                 if (!string.IsNullOrWhiteSpace(playerName))
                 {
-                    capi.SendChatMessage($"/land claim load {selectedIndex}");
-                    capi.SendChatMessage($"/land claim revoke {playerName}");
-                    capi.SendChatMessage($"/land claim save {name}");
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim revoke {playerName}",
+                        $"/land claim save {name}"
+                    );
                 }
+                TryClose();
                 return true;
             }, current);
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
         }
+
 
         // ===================== ПІДМЕНЮ ДІЙ ЗАГАЛЬНИЙ ДОСТУП ДО ПРИВАТУ =====================
         void SubmenuGeneralAccessu(string name)
@@ -443,10 +488,11 @@ namespace Claim_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:access-all"), () =>
             {
-                SubmenuGeneralAccessu(name);
-                capi.SendChatMessage($"/land claim load {selectedIndex}");
-                capi.SendChatMessage($"/land claim allowuseeveryone true");
-                capi.SendChatMessage($"/land claim save {name}");
+                _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim allowuseeveryone true",
+                        $"/land claim save {name}"
+                );
                 TryClose();
                 return true;
             }, current);
@@ -454,9 +500,11 @@ namespace Claim_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:access-nothing"), () =>
             {
-                capi.SendChatMessage($"/land claim load {selectedIndex}");
-                capi.SendChatMessage($"/land claim allowuseeveryone false");
-                capi.SendChatMessage($"/land claim save {name}");
+                _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim allowuseeveryone false",
+                        $"/land claim save {name}"
+                );
                 TryClose();
                 return true;
             }, current);
