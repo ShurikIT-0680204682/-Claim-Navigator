@@ -1,0 +1,11 @@
+{
+    "type": "Code",
+    "modid": "claimnavigator",
+    "name": "Claim_Navigator",
+    "authors": [
+        "ShuriKIT"
+    ],
+    "side": "Client",
+    "description": "Convenient Interface for Land Claims",
+    "version": "1.0.0"
+}

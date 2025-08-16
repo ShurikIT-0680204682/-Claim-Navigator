@@ -1,0 +1,18 @@
+{
+    "search-client-log": "Your land claims:",
+    "text-in-settings": "Open Claim Navigator",
+    "title-buildlistmenu": "List of claims",
+    "title-actionmenu": "Actions for: {0}",
+    "title-submenuplayeraccess": "Player access to claim: {0}",
+    "title-submenugeneralaccessu": "Access for all players: {0} ",
+    "back": "← Back",
+    "аllocate-claim": "Аllocate claim",
+    "delete-claim": "Delete claim",
+    "general-claim": "General access",
+    "player-claim": "Player access",
+    "player-all": "Grant all access",
+    "player-use": "Grant Use Access",
+    "player-delete": "Delete player",
+    "access-all": "Аll access",
+    "access-nothing": "Nothing access"
+}
