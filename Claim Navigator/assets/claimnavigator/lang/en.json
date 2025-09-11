@@ -15,5 +15,16 @@
     "player-use": "Grant Use Access",
     "player-delete": "Delete player",
     "access-all": "Use access",
-    "access-nothing": "Nothing access"
+    "access-nothing": "Nothing access",
+    "new-claim-new": "",
+    "new-claim-start": "",
+    "new-claim-end": "",
+    "new-claim-add": "",
+    "new-claim-save": "",
+    "nort": "nort",
+    "south": "",
+    "west": "",
+    "east": "",
+    "up": "",
+    "down": ""
 }

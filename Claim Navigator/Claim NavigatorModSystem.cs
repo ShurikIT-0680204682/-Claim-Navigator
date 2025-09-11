@@ -328,7 +328,7 @@ namespace Claim_Navigator
             }, Bttn);
 
 
-            // стартова Y-позиція для першого ряду (трохи нижче кнопки назад)
+            // стартова Y-позиція для першого ряду 
             int firstRowY = (int)Bttn.BelowCopy(0, verticalSpacing).fixedY;
 
             // ======= 1 ряд: Північ, Південь, Захід =======
@@ -349,6 +349,8 @@ namespace Claim_Navigator
             string eastBuf = "";
             string upBuf = "";
             string downBuf = "";
+            string nameClaimBuf = "";
+
 
             // Колір placeholder (темно/світло-коричневий — налаштуй під свій смак)
             double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 }; // RGBA 0..1
@@ -428,10 +430,30 @@ namespace Claim_Navigator
                 return true;
             }, applyBtn);
 
+
+
+            applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
+            composer.AddTextInput(applyBtn, (txt) =>
+            {
+                nameClaimBuf = txt ?? "";
+                SingleComposer?.GetDynamicText("ph_name")?.SetNewText(string.IsNullOrEmpty(nameClaimBuf) ? "Ім'я привату" : "");
+            }, CairoFont.TextInput(), "claimName");
+
+            composer.AddDynamicText("Ім'я привату",
+                CairoFont.WhiteSmallText().WithColor(placeholderColor),
+                applyBtn.FlatCopy().WithFixedOffset(5, 5),
+                "ph_name");
+
+            // Save під полем, тієї ж ширини
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("save"), () =>
             {
-                //capi.SendChatMessage($"/land claim save {nameClaim}");
+                string finalName = string.IsNullOrWhiteSpace(nameClaimBuf)
+                    ? SingleComposer?.GetTextInput("claimName")?.GetText() ?? ""
+                    : nameClaimBuf;
+
+                capi.SendChatMessage($"/land claim save {finalName}");
+                TryClose();
                 return true;
             }, applyBtn);
 

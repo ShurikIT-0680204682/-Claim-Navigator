@@ -15,5 +15,16 @@
     "player-use": "Use принять игрока",
     "player-delete": "Изгнать",
     "access-all": "Use доступ",
-    "access-nothing": "Nothing доступ"
+    "access-nothing": "Nothing доступ",
+    "new-claim-new": "",
+    "new-claim-start": "",
+    "new-claim-end": "",
+    "new-claim-add": "",
+    "new-claim-save": "",
+    "nort": "",
+    "south": "",
+    "west": "",
+    "east": "",
+    "up": "",
+    "down": ""
 }
