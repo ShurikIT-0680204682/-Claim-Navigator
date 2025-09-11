@@ -1,10 +1,11 @@
 {
     "search-client-log": "Ваши земельные участки:",
-    "text-in-settings": "Открыть Private Navigator",
+    "text-in-settings": "Открыть Claim Navigator",
     "title-buildlistmenu": "Список приватов",
     "title-actionmenu": "Действия с: {0}",
     "title-submenuplayeraccess": "Доступ игроку к привату: {0}",
     "title-submenugeneralaccessu": "Доступ для всех игроков: {0}",
+    "create-claim": "Создать приват",
     "back": "← Назад",
     "аllocate-claim": "Выделить",
     "delete-claim": "Удалить",
