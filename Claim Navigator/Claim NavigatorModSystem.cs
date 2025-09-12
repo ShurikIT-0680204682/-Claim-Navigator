@@ -313,14 +313,14 @@ namespace Claim_Navigator
             }, Bttn);
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("claimnavigator:"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-start"), () =>
             {
                 capi.SendChatMessage($"/land claim start");
                 return true;
             }, Bttn);
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("claimnavigator:"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-end"), () =>
             {
                 capi.SendChatMessage($"/land claim end");
                 return true;
@@ -562,6 +562,8 @@ namespace Claim_Navigator
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
 
+            double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
+
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
                 .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
@@ -590,10 +592,25 @@ namespace Claim_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddTextInput(
                 current,
-                (txt) => { playerNameBuffer = txt; },   // <-- важливо: зберігаємо введене
+                (txt) =>
+                {
+                    playerNameBuffer = txt ?? "";
+                    SingleComposer?.GetDynamicText("ph_playerName")
+                    ?.SetNewText(string.IsNullOrEmpty(playerNameBuffer) ? Lang.Get("claimnavigator:player-name") : "");
+                },
                 CairoFont.TextInput(),
                 "playerName"
             );
+
+            composer.AddDynamicText(
+                Lang.Get("claimnavigator:player-name"),   // ← "Ім’я гравця"
+                CairoFont.WhiteSmallText().WithColor(placeholderColor),
+                current.FlatCopy().WithFixedOffset(5, 5),
+                "ph_playerName"
+            );
+
+
+
 
             // Допоміжна функція для безпечного читання імені
             string ReadPlayerName()

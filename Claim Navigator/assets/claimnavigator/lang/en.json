@@ -11,6 +11,7 @@
     "delete-claim": "Delete claim",
     "general-claim": "General access",
     "player-claim": "Player access",
+    "player-name": "Player name",
     "player-all": "Grant all access",
     "player-use": "Grant Use Access",
     "player-delete": "Delete player",
