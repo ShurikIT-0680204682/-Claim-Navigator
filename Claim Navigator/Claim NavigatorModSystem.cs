@@ -226,9 +226,8 @@ namespace Claim_Navigator
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - scrollbarWidth - 20, buttonHeight);
 
             // кнопка створення приватів
-            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:titile-newclaimmenu"), () =>
             {
-                capi.SendChatMessage("типу нова кнопка");
                 NewClaimMenu();
                 return true;
             }, current);
@@ -295,7 +294,7 @@ namespace Claim_Navigator
                 .CreateCompo("newclaim", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar(Lang.Get("claimnavigator:create-claim"), () => TryClose())
+                .AddDialogTitleBar(Lang.Get("claimnavigator:titile-newclaimmenu"), () => TryClose())
                 .BeginChildElements(contentBounds);
 
             // Кнопка назад (прибрати/змінити якщо не потрібно)
@@ -307,21 +306,21 @@ namespace Claim_Navigator
             }, Bttn);
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("new"), () =>
+            composer.AddSmallButton(Lang.Get(Lang.Get("claimnavigator:create-claim-new")), () =>
             {
                 capi.SendChatMessage($"/land claim new");
                 return true;
             }, Bttn);
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("start"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:"), () =>
             {
                 capi.SendChatMessage($"/land claim start");
                 return true;
             }, Bttn);
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("end"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:"), () =>
             {
                 capi.SendChatMessage($"/land claim end");
                 return true;
@@ -331,15 +330,15 @@ namespace Claim_Navigator
             // стартова Y-позиція для першого ряду 
             int firstRowY = (int)Bttn.BelowCopy(0, verticalSpacing).fixedY;
 
-            // ======= 1 ряд: Північ, Південь, Захід =======
+            // ======= 1 ряд: Північ, Захід, Верх =======
             ElementBounds northBounds = ElementBounds.Fixed(10, firstRowY, inputWidth, inputHeight);
-            ElementBounds southBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 1, firstRowY, inputWidth, inputHeight);
-            ElementBounds westBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 2, firstRowY, inputWidth, inputHeight);
+            ElementBounds westBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 1, firstRowY, inputWidth, inputHeight);
+            ElementBounds upBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 2, firstRowY, inputWidth, inputHeight);
 
-            // ======= 2 ряд: Схід, Вгору, Вниз =======
+            // ======= 2 ряд: Південь, Схід, Вниз =======
             int secondRowY = firstRowY + inputHeight + verticalSpacing;
-            ElementBounds eastBounds = ElementBounds.Fixed(10, secondRowY, inputWidth, inputHeight);
-            ElementBounds upBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 1, secondRowY, inputWidth, inputHeight);
+            ElementBounds southBounds = ElementBounds.Fixed(10, secondRowY, inputWidth, inputHeight);
+            ElementBounds eastBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 1, secondRowY, inputWidth, inputHeight);
             ElementBounds downBounds = ElementBounds.Fixed(10 + (inputWidth + gap) * 2, secondRowY, inputWidth, inputHeight);
 
             // Локальні буфери (за потреби)
@@ -360,48 +359,48 @@ namespace Claim_Navigator
             {
                 northBuf = txt ?? "";
                 // приховуємо/показуємо placeholder (SingleComposer вже існує коли користувач вводить)
-                SingleComposer?.GetDynamicText("ph_north")?.SetNewText(string.IsNullOrEmpty(northBuf) ? "Північ" : "");
+                SingleComposer?.GetDynamicText("ph_north")?.SetNewText(string.IsNullOrEmpty(northBuf) ? Lang.Get("claimnavigator:north") : "");
             }, CairoFont.TextInput(), "north");
-            composer.AddDynamicText("Північ", CairoFont.WhiteSmallText().WithColor(placeholderColor), northBounds.FlatCopy().WithFixedOffset(5, 5), "ph_north");
+            composer.AddDynamicText(Lang.Get("claimnavigator:north"), CairoFont.WhiteSmallText().WithColor(placeholderColor), northBounds.FlatCopy().WithFixedOffset(5, 5), "ph_north");
 
             composer.AddTextInput(southBounds, (txt) =>
             {
                 southBuf = txt ?? "";
-                SingleComposer?.GetDynamicText("ph_south")?.SetNewText(string.IsNullOrEmpty(southBuf) ? "Південь" : "");
+                SingleComposer?.GetDynamicText("ph_south")?.SetNewText(string.IsNullOrEmpty(southBuf) ? Lang.Get("claimnavigator:south") : "");
             }, CairoFont.TextInput(), "south");
-            composer.AddDynamicText("Південь", CairoFont.WhiteSmallText().WithColor(placeholderColor), southBounds.FlatCopy().WithFixedOffset(5, 5), "ph_south");
+            composer.AddDynamicText(Lang.Get("claimnavigator:south"), CairoFont.WhiteSmallText().WithColor(placeholderColor), southBounds.FlatCopy().WithFixedOffset(5, 5), "ph_south");
 
             composer.AddTextInput(westBounds, (txt) =>
             {
                 westBuf = txt ?? "";
-                SingleComposer?.GetDynamicText("ph_west")?.SetNewText(string.IsNullOrEmpty(westBuf) ? "Захід" : "");
+                SingleComposer?.GetDynamicText("ph_west")?.SetNewText(string.IsNullOrEmpty(westBuf) ? Lang.Get("claimnavigator:west") : "");
             }, CairoFont.TextInput(), "west");
-            composer.AddDynamicText("Захід", CairoFont.WhiteSmallText().WithColor(placeholderColor), westBounds.FlatCopy().WithFixedOffset(5, 5), "ph_west");
+            composer.AddDynamicText(Lang.Get("claimnavigator:west"), CairoFont.WhiteSmallText().WithColor(placeholderColor), westBounds.FlatCopy().WithFixedOffset(5, 5), "ph_west");
 
             composer.AddTextInput(eastBounds, (txt) =>
             {
                 eastBuf = txt ?? "";
-                SingleComposer?.GetDynamicText("ph_east")?.SetNewText(string.IsNullOrEmpty(eastBuf) ? "Схід" : "");
+                SingleComposer?.GetDynamicText("ph_east")?.SetNewText(string.IsNullOrEmpty(eastBuf) ? Lang.Get("claimnavigator:east") : "");
             }, CairoFont.TextInput(), "east");
-            composer.AddDynamicText("Схід", CairoFont.WhiteSmallText().WithColor(placeholderColor), eastBounds.FlatCopy().WithFixedOffset(5, 5), "ph_east");
+            composer.AddDynamicText(Lang.Get("claimnavigator:east"), CairoFont.WhiteSmallText().WithColor(placeholderColor), eastBounds.FlatCopy().WithFixedOffset(5, 5), "ph_east");
 
             composer.AddTextInput(upBounds, (txt) =>
             {
                 upBuf = txt ?? "";
-                SingleComposer?.GetDynamicText("ph_up")?.SetNewText(string.IsNullOrEmpty(upBuf) ? "Вгору" : "");
+                SingleComposer?.GetDynamicText("ph_up")?.SetNewText(string.IsNullOrEmpty(upBuf) ? Lang.Get("claimnavigator:up") : "");
             }, CairoFont.TextInput(), "up");
-            composer.AddDynamicText("Вгору", CairoFont.WhiteSmallText().WithColor(placeholderColor), upBounds.FlatCopy().WithFixedOffset(5, 5), "ph_up");
+            composer.AddDynamicText(Lang.Get("claimnavigator:up"), CairoFont.WhiteSmallText().WithColor(placeholderColor), upBounds.FlatCopy().WithFixedOffset(5, 5), "ph_up");
 
             composer.AddTextInput(downBounds, (txt) =>
             {
                 downBuf = txt ?? "";
-                SingleComposer?.GetDynamicText("ph_down")?.SetNewText(string.IsNullOrEmpty(downBuf) ? "Вниз" : "");
+                SingleComposer?.GetDynamicText("ph_down")?.SetNewText(string.IsNullOrEmpty(downBuf) ? Lang.Get("claimnavigator:down") : "");
             }, CairoFont.TextInput(), "down");
-            composer.AddDynamicText("Вниз", CairoFont.WhiteSmallText().WithColor(placeholderColor), downBounds.FlatCopy().WithFixedOffset(5, 5), "ph_down");
+            composer.AddDynamicText(Lang.Get("claimnavigator:down"), CairoFont.WhiteSmallText().WithColor(placeholderColor), downBounds.FlatCopy().WithFixedOffset(5, 5), "ph_down");
 
             // Кнопка "Підтвердити" наприклад
             ElementBounds applyBtn = ElementBounds.Fixed(10, secondRowY + inputHeight + verticalSpacing, contentWidth - 20, buttonHeight);
-            composer.AddSmallButton(Lang.Get("раширить"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-grow"), () =>
             {
                 // читаємо остаточно (фейлбек на GetTextInput)
                 string n = string.IsNullOrWhiteSpace(northBuf) ? SingleComposer?.GetTextInput("north")?.GetText() ?? "" : northBuf;
@@ -424,7 +423,7 @@ namespace Claim_Navigator
             }, applyBtn);
 
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("add"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-add"), () =>
             {
                 capi.SendChatMessage($"/land claim add");
                 return true;
@@ -439,14 +438,14 @@ namespace Claim_Navigator
                 SingleComposer?.GetDynamicText("ph_name")?.SetNewText(string.IsNullOrEmpty(nameClaimBuf) ? "Ім'я привату" : "");
             }, CairoFont.TextInput(), "claimName");
 
-            composer.AddDynamicText("Ім'я привату",
+            composer.AddDynamicText(Lang.Get("claimnavigator:create-claim-name"),
                 CairoFont.WhiteSmallText().WithColor(placeholderColor),
                 applyBtn.FlatCopy().WithFixedOffset(5, 5),
                 "ph_name");
 
             // Save під полем, тієї ж ширини
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("save"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-save"), () =>
             {
                 string finalName = string.IsNullOrWhiteSpace(nameClaimBuf)
                     ? SingleComposer?.GetTextInput("claimName")?.GetText() ?? ""
@@ -461,12 +460,12 @@ namespace Claim_Navigator
             SingleComposer = composer.Compose();
 
             // Початкова видимість placeholder-ів (якщо в полях вже є текст)
-            SingleComposer?.GetDynamicText("ph_north")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("north")?.GetText() ?? "") ? "Північ" : "");
-            SingleComposer?.GetDynamicText("ph_south")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("south")?.GetText() ?? "") ? "Південь" : "");
-            SingleComposer?.GetDynamicText("ph_west")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("west")?.GetText() ?? "") ? "Захід" : "");
-            SingleComposer?.GetDynamicText("ph_east")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("east")?.GetText() ?? "") ? "Схід" : "");
-            SingleComposer?.GetDynamicText("ph_up")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("up")?.GetText() ?? "") ? "Вгору" : "");
-            SingleComposer?.GetDynamicText("ph_down")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("down")?.GetText() ?? "") ? "Вниз" : "");
+            SingleComposer?.GetDynamicText("ph_north")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("north")?.GetText() ?? "") ? Lang.Get("claimnavigator:north") : "");
+            SingleComposer?.GetDynamicText("ph_south")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("south")?.GetText() ?? "") ? Lang.Get("claimnavigator:south") : "");
+            SingleComposer?.GetDynamicText("ph_west")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("west")?.GetText() ?? "") ? Lang.Get("claimnavigator:west") : "");
+            SingleComposer?.GetDynamicText("ph_east")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("east")?.GetText() ?? "") ? Lang.Get("claimnavigator:east") : "");
+            SingleComposer?.GetDynamicText("ph_up")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("up")?.GetText() ?? "") ? Lang.Get("claimnavigator:up") : "");
+            SingleComposer?.GetDynamicText("ph_down")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("down")?.GetText() ?? "") ? Lang.Get("claimnavigator:down") : "");
         }
 
 
