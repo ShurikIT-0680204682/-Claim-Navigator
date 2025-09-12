@@ -5,12 +5,14 @@
     "title-actionmenu": "Дії з: {0}",
     "title-submenuplayeraccess": "Доступ гравця до ділянки: {0}",
     "title-submenugeneralaccessu": "Доступ для всіх гравців: {0}",
-    "titile-newclaimmenu": "Створити ділянку",
+    "title-newclaimmenu": "Створити ділянку",
+    "title-submenugroupaccess": "Привязати групу до ділянки: {0}",
     "back": "← Назад",
     "аllocate-claim": "Виділити",
     "delete-claim": "Видалити",
     "general-claim": "Загальний доступ",
     "player-claim": "Доступ гравцю",
+    "group-claim": "Доступ групі",
     "player-name": "Ім'я гравця",
     "player-all": "All прийняти гравця",
     "player-use": "Use прийняти гравця",
@@ -29,5 +31,8 @@
     "west": "Захід",
     "east": "Схід",
     "up": "Верх",
-    "down": "Вниз"
+    "down": "Вниз",
+    "group-name": "Ім'я групи",
+    "assign-group": "Призначити групу",
+    "unassign-group": "Скасувати призначення"
 }

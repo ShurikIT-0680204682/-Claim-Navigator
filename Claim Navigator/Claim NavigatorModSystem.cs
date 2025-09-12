@@ -226,7 +226,7 @@ namespace Claim_Navigator
             ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - scrollbarWidth - 20, buttonHeight);
 
             // кнопка створення приватів
-            composer.AddSmallButton(Lang.Get("claimnavigator:titile-newclaimmenu"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:title-newclaimmenu"), () =>
             {
                 NewClaimMenu();
                 return true;
@@ -294,7 +294,7 @@ namespace Claim_Navigator
                 .CreateCompo("newclaim", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar(Lang.Get("claimnavigator:titile-newclaimmenu"), () => TryClose())
+                .AddDialogTitleBar(Lang.Get("claimnavigator:title-newclaimmenu"), () => TryClose())
                 .BeginChildElements(contentBounds);
 
             // Кнопка назад (прибрати/змінити якщо не потрібно)
@@ -542,6 +542,13 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:group-claim"), () =>
+            {
+                SubmenuGroupAccess(name);
+                return true;
+            }, current);
+
             composer.EndChildElements();
             SingleComposer = composer.Compose();
         }
@@ -551,7 +558,7 @@ namespace Claim_Navigator
 
 
         // ===================== ПІДМЕНЮ ДОБАВИТИ ГРАВЦЯ В ПРИВАТ =====================
-        string playerNameBuffer = "";
+
         void SubmenuPlayerAccess(string name)
         {
             int buttonHeight = 30;  // Висота однієї кнопки
@@ -562,6 +569,7 @@ namespace Claim_Navigator
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
 
+            string playerNameBuffer = "";
             double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
 
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
@@ -744,6 +752,117 @@ namespace Claim_Navigator
             SingleComposer = composer.Compose();
         }
 
+        // ===================== ПІДМЕНЮ ДІЙ ПРИВЯЗКИ ГРУПИ ДО ПРИВАТУ =====================
+        void SubmenuGroupAccess(string name)
+        {
+            int buttonHeight = 30;  // Висота однієї кнопки
+            int verticalSpacing = 10;
+            int contentWidth = 300;
+            int buttonNum = 5;
+
+            int dialogWidth = contentWidth + 40;
+            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
+
+            string groupNameBuffer = "";
+            double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
+
+            ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
+                .WithAlignment(EnumDialogArea.CenterMiddle)
+                .WithFixedAlignmentOffset(GuiStyle.DialogToScreenPadding, GuiStyle.DialogToScreenPadding);
+
+            ElementBounds contentBounds = ElementBounds.Fixed(0, 40, contentWidth, dialogHeight - 50)
+                .WithFixedPadding(10, 10)
+                .WithSizing(ElementSizing.FitToChildren);
+
+
+            var composer = capi.Gui
+                .CreateCompo("groupmanage", dialogBounds)
+                .AddShadedDialogBG(ElementBounds.Fill)
+                .AddDialogBG(ElementBounds.Fill, false)
+                .AddDialogTitleBar(Lang.Get("claimnavigator:title-submenugroupaccess", name), () => TryClose())
+                .BeginChildElements(contentBounds);
+
+            // Кнопка назад
+            ElementBounds current = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
+            composer.AddSmallButton(Lang.Get("claimnavigator:back"), () =>
+            {
+                ActionMenu(name);
+                return true;
+            }, current);
+
+            // Поле для вводу (оновлюємо буфер при кожній зміні)
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddTextInput(
+                current,
+                (txt) =>
+                {
+                    groupNameBuffer = txt ?? "";
+                    SingleComposer?.GetDynamicText("ph_groupName")
+                    ?.SetNewText(string.IsNullOrEmpty(groupNameBuffer) ? Lang.Get("claimnavigator:group-name") : "");
+                },
+                CairoFont.TextInput(),
+                "groupName"
+            );
+
+            composer.AddDynamicText(
+                Lang.Get("claimnavigator:group-name"),
+                CairoFont.WhiteSmallText().WithColor(placeholderColor),
+                current.FlatCopy().WithFixedOffset(5, 5),
+                "ph_groupName"
+            );
+
+
+
+
+            // Допоміжна функція для безпечного читання імені
+            string ReadGroupName()
+            {
+                string val = groupNameBuffer;
+                if (string.IsNullOrWhiteSpace(val))
+                {
+                    // підстраховка: читаємо безпосередньо з елемента
+                    val = SingleComposer?.GetTextInput("groupName")?.GetText() ?? "";
+                }
+                return val.Trim();
+            }
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:assign-group"), () =>
+            {
+                string groupName = ReadGroupName();
+                if (!string.IsNullOrWhiteSpace(groupName))
+                {
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grantgroup {groupName} all",
+                        $"/land claim save {name}"
+                    );
+                }
+                TryClose();
+                return true;
+            }, current);
+
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:unassign-group"), () =>
+            {
+                string groupName = ReadGroupName();
+                if (!string.IsNullOrWhiteSpace(groupName))
+                {
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim revokegroup {groupName}",
+                        $"/land claim save {name}"
+                    );
+                }
+                TryClose();
+                return true;
+            }, current);
+
+
+            composer.EndChildElements();
+            SingleComposer = composer.Compose();
+        }
     }
 }
 

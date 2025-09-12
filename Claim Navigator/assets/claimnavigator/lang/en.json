@@ -5,12 +5,14 @@
     "title-actionmenu": "Actions for: {0}",
     "title-submenuplayeraccess": "Player access to claim: {0}",
     "title-submenugeneralaccessu": "Access for all players: {0} ",
-    "titile-newclaimmenu": "Сreate claim",
+    "title-newclaimmenu": "Сreate claim",
+    "title-submenugroupaccess": "Assign Group to Claim: {0}",
     "back": "← Back",
     "аllocate-claim": "Аllocate claim",
     "delete-claim": "Delete claim",
     "general-claim": "General access",
     "player-claim": "Player access",
+    "group-claim": "Group access",
     "player-name": "Player name",
     "player-all": "Grant all access",
     "player-use": "Grant Use Access",
@@ -29,5 +31,9 @@
     "west": "West",
     "east": "East",
     "up": "Up",
-    "down": "Down"
+    "down": "Down",
+    "group-name": "Group name",
+    "assign-group": "Assign group",
+    "unassign-group": "Unassign group"
+
 }
