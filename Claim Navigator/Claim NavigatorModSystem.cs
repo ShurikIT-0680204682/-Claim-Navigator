@@ -100,6 +100,10 @@ namespace Claim_Navigator
                         {
                             latestClaimsList = currentList;
                         }
+                        else
+                        {
+                            latestClaimsList = new List<string>();  // <-- скидаємо, якщо нічого не знайшли
+                        }
                         continue;
                     }
 
