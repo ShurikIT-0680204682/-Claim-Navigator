@@ -33,6 +33,7 @@
     "up": "Верх",
     "down": "Вниз",
     "group-name": "Ім'я групи",
-    "assign-group": "Призначити групу",
-    "unassign-group": "Скасувати призначення"
+    "all-group": "All доступ групі",
+    "use-group": "Use доступ групі",
+    "unassign-group": "Скасувати доступ"
 }

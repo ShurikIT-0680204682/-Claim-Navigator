@@ -33,7 +33,8 @@
     "up": "Up",
     "down": "Down",
     "group-name": "Group name",
-    "assign-group": "Assign group",
-    "unassign-group": "Unassign group"
+    "all-group": "All group access",
+    "use-group": "Use group access",
+    "unassign-group": "Remove access"
 
 }

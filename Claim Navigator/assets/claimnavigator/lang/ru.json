@@ -6,7 +6,7 @@
     "title-submenuplayeraccess": "Доступ игроку к привату: {0}",
     "title-submenugeneralaccessu": "Доступ для всех игроков: {0}",
     "title-newclaimmenu": "Создать приват",
-    "title-submenugroupaccess": "Привязать групу к привату: {0}",
+    "title-submenugroupaccess": "Привязать группу к привату: {0}",
     "back": "← Назад",
     "аllocate-claim": "Выделить",
     "delete-claim": "Удалить",
@@ -32,8 +32,9 @@
     "east": "Восток",
     "up": "Верх",
     "down": "Вниз",
-    "group-name": "Имя групы",
-    "assign-group": "Привязать групу",
-    "unassign-group": "Отвязать групу"
+    "group-name": "Имя группы",
+    "all-group": "All доступ группе",
+    "use-group": "Use доступ группе",
+    "unassign-group": "Убрать доступ"
 
 }

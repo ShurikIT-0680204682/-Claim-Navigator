@@ -827,7 +827,7 @@ namespace Claim_Navigator
             }
 
             current = current.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get("claimnavigator:assign-group"), () =>
+            composer.AddSmallButton(Lang.Get("claimnavigator:all-group"), () =>
             {
                 string groupName = ReadGroupName();
                 if (!string.IsNullOrWhiteSpace(groupName))
@@ -842,6 +842,21 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:use-group"), () =>
+            {
+                string groupName = ReadGroupName();
+                if (!string.IsNullOrWhiteSpace(groupName))
+                {
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grantgroup {groupName} use",
+                        $"/land claim save {name}"
+                    );
+                }
+                TryClose();
+                return true;
+            }, current);
 
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:unassign-group"), () =>
