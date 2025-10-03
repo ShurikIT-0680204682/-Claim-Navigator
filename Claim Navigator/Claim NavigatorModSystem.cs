@@ -418,14 +418,18 @@ namespace Claim_Navigator
                 string up = string.IsNullOrWhiteSpace(upBuf) ? SingleComposer?.GetTextInput("up")?.GetText() ?? "" : upBuf;
                 string dn = string.IsNullOrWhiteSpace(downBuf) ? SingleComposer?.GetTextInput("down")?.GetText() ?? "" : downBuf;
 
-                _ = SendCommandsAsync(
-                    $"/land claim grow north {n}",
-                    $"/land claim grow south {s}",
-                    $"/land claim grow west {w}",
-                    $"/land claim grow east {e}",
-                    $"/land claim grow up {up}",
-                    $"/land claim grow down {dn}"
-                );
+
+                List<string> growCommands = new List<string>();
+                if (!string.IsNullOrWhiteSpace(n)) { growCommands.Add($"/land claim grow north {n}"); }
+                if (!string.IsNullOrWhiteSpace(s)) { growCommands.Add($"/land claim grow south {s}"); }
+                if (!string.IsNullOrWhiteSpace(w)) { growCommands.Add($"/land claim grow south {w}"); }
+                if (!string.IsNullOrWhiteSpace(e)) { growCommands.Add($"/land claim grow south {e}"); }
+                if (!string.IsNullOrWhiteSpace(up)) { growCommands.Add($"/land claim grow south {up}"); }
+                if (!string.IsNullOrWhiteSpace(dn)) { growCommands.Add($"/land claim grow south {dn}"); }
+                if (growCommands.Count > 0)
+                {
+                    _ = SendCommandsAsync(growCommands.ToArray());
+                }
 
                 return true;
             }, applyBtn);
