@@ -196,6 +196,8 @@ namespace Claim_Navigator
             int dialogWidth = contentWidth + 40;  // Загальна ширина вікна
             int dialogHeight = 60 + listMaxHeight;// Загальна висота вікна
 
+            listTotalHeight = 35 + buttonCount * (buttonHeight + verticalSpacing); // Повна висота всіх кнопок
+
             // Межі діалогу (центрування на екрані)
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
@@ -208,7 +210,7 @@ namespace Claim_Navigator
             int scrollbarWidth = 12; // Ширина скролбара
             ElementBounds scrollbarBounds = ElementBounds.Fixed(contentWidth - scrollbarWidth, 0, scrollbarWidth, listMaxHeight);
 
-            listTotalHeight = buttonCount * (buttonHeight + verticalSpacing); // Повна висота всіх кнопок
+
 
             // Створюємо GUI-композер
             var composer = capi.Gui
@@ -243,6 +245,8 @@ namespace Claim_Navigator
             {
                 string name = privatesList[i];
                 int index = i;
+
+                // capi.Logger.Notification($"{i}: {current.fixedY}"); // для перевірки listTotalHeight
 
                 composer.AddSmallButton($"{index + 1}. {name}", () =>
                 {
@@ -525,8 +529,7 @@ namespace Claim_Navigator
             {
                 _ = SendCommandsAsync(
                   $"/land free {selectedIndex}",
-                  $"/land free {selectedIndex} confirm",
-                  $"/land claim save {name}"
+                  $"/land free {selectedIndex} confirm"
                 );
                 TryClose();
                 return true;
