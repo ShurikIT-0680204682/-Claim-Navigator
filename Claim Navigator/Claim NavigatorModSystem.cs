@@ -444,10 +444,10 @@ namespace Claim_Navigator
                 List<string> growCommands = new List<string>();
                 if (!string.IsNullOrWhiteSpace(n)) { growCommands.Add($"/land claim grow north {n}"); }
                 if (!string.IsNullOrWhiteSpace(s)) { growCommands.Add($"/land claim grow south {s}"); }
-                if (!string.IsNullOrWhiteSpace(w)) { growCommands.Add($"/land claim grow south {w}"); }
-                if (!string.IsNullOrWhiteSpace(e)) { growCommands.Add($"/land claim grow south {e}"); }
-                if (!string.IsNullOrWhiteSpace(up)) { growCommands.Add($"/land claim grow south {up}"); }
-                if (!string.IsNullOrWhiteSpace(dn)) { growCommands.Add($"/land claim grow south {dn}"); }
+                if (!string.IsNullOrWhiteSpace(w)) { growCommands.Add($"/land claim grow west {w}"); }
+                if (!string.IsNullOrWhiteSpace(e)) { growCommands.Add($"/land claim grow east {e}"); }
+                if (!string.IsNullOrWhiteSpace(up)) { growCommands.Add($"/land claim grow up {up}"); }
+                if (!string.IsNullOrWhiteSpace(dn)) { growCommands.Add($"/land claim grow down {dn}"); }
                 if (growCommands.Count > 0)
                 {
                     _ = SendCommandsAsync(growCommands.ToArray());
