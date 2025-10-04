@@ -307,6 +307,8 @@ namespace Claim_Navigator
 
             // Кнопка назад (прибрати/змінити якщо не потрібно)
             ElementBounds Bttn = ElementBounds.Fixed(10, 10, contentWidth - 20, buttonHeight);
+
+            // Кнопка
             composer.AddSmallButton(Lang.Get("claimnavigator:back"), () =>
             {
                 BuildListMenu();
@@ -320,12 +322,26 @@ namespace Claim_Navigator
                 return true;
             }, Bttn);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-new"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                Bttn                         // межі кнопки (не FlatCopy!)
+            );
+
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-start"), () =>
             {
                 capi.SendChatMessage($"/land claim start");
                 return true;
             }, Bttn);
+
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-start"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                Bttn                         // межі кнопки (не FlatCopy!)
+            );
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-end"), () =>
@@ -334,6 +350,12 @@ namespace Claim_Navigator
                 return true;
             }, Bttn);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-end"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                Bttn                         // межі кнопки (не FlatCopy!)
+            );
 
             // стартова Y-позиція для першого ряду 
             int firstRowY = (int)Bttn.BelowCopy(0, verticalSpacing).fixedY;
@@ -434,6 +456,13 @@ namespace Claim_Navigator
                 return true;
             }, applyBtn);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-grow"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                applyBtn                         // межі кнопки (не FlatCopy!)
+            );
+
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-add"), () =>
             {
@@ -441,6 +470,12 @@ namespace Claim_Navigator
                 return true;
             }, applyBtn);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-add"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                applyBtn                         // межі кнопки (не FlatCopy!)
+            );
 
 
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
@@ -467,6 +502,13 @@ namespace Claim_Navigator
                 TryClose();
                 return true;
             }, applyBtn);
+
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-create-claim-save"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                applyBtn                         // межі кнопки (не FlatCopy!)
+            );
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
@@ -528,6 +570,14 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            // Підказка (окремо, після кнопки)
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-аllocate-claim"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current                         // межі кнопки (не FlatCopy!)
+            );
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:delete-claim"), () =>
             {
@@ -539,12 +589,26 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+               Lang.Get("claimnavigator:hint-delete-claim"), // текст підказки
+               CairoFont.WhiteDetailText(), // шрифт
+               250,                         // ширина
+               current
+           );
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:general-claim"), () =>
             {
                 SubmenuGeneralAccessu(name);
                 return true;
             }, current);
+
+            composer.AddHoverText(
+              Lang.Get("claimnavigator:hint-general-claim"), // текст підказки
+              CairoFont.WhiteDetailText(), // шрифт
+              250,                         // ширина
+              current
+            );
 
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-claim"), () =>
@@ -553,12 +617,26 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+              Lang.Get("claimnavigator:hint-player-claim"), // текст підказки
+              CairoFont.WhiteDetailText(), // шрифт
+              250,                         // ширина
+              current
+            );
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:group-claim"), () =>
             {
                 SubmenuGroupAccess(name);
                 return true;
             }, current);
+
+            composer.AddHoverText(
+             Lang.Get("claimnavigator:hint-group-claim"), // текст підказки
+             CairoFont.WhiteDetailText(), // шрифт
+             250,                         // ширина
+             current
+           );
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
@@ -578,7 +656,7 @@ namespace Claim_Navigator
             int buttonNum = 5;
 
             int dialogWidth = contentWidth + 40;
-            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
+            int dialogHeight = 100 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
 
             string playerNameBuffer = "";
             double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
@@ -628,9 +706,6 @@ namespace Claim_Navigator
                 "ph_playerName"
             );
 
-
-
-
             // Допоміжна функція для безпечного читання імені
             string ReadPlayerName()
             {
@@ -661,6 +736,39 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+
+            composer.AddHoverText(
+             Lang.Get("claimnavigator:hint-player-use"), // текст підказки
+             CairoFont.WhiteDetailText(), // шрифт
+             250,                         // ширина
+             current
+           );
+
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:player-traverse"), () =>
+            {
+                string playerName = ReadPlayerName();
+                if (!string.IsNullOrWhiteSpace(playerName))
+                {
+
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grant {playerName} traverse",
+                        $"/land claim save {name}"
+                    );
+                }
+                TryClose();
+                return true;
+            }, current);
+
+            composer.AddHoverText(
+            Lang.Get("claimnavigator:hint-player-traverse"), // текст підказки
+            CairoFont.WhiteDetailText(), // шрифт
+            250,                         // ширина
+            current
+          );
+
             // Кнопка "all"
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-all"), () =>
@@ -678,6 +786,13 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+            Lang.Get("claimnavigator:hint-player-all"), // текст підказки
+            CairoFont.WhiteDetailText(), // шрифт
+            250,                         // ширина
+            current
+          );
+
             // Кнопка "revoke"
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:player-delete"), () =>
@@ -694,6 +809,13 @@ namespace Claim_Navigator
                 TryClose();
                 return true;
             }, current);
+
+            composer.AddHoverText(
+             Lang.Get("claimnavigator:hint-player-delete"), // текст підказки
+             CairoFont.WhiteDetailText(), // шрифт
+             250,                         // ширина
+             current
+            );
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
@@ -747,6 +869,13 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+               Lang.Get("claimnavigator:hint-access-all"), // текст підказки
+               CairoFont.WhiteDetailText(), // шрифт
+               250,                         // ширина
+               current                         // межі кнопки (не FlatCopy!)
+           );
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:access-nothing"), () =>
             {
@@ -758,6 +887,13 @@ namespace Claim_Navigator
                 TryClose();
                 return true;
             }, current);
+
+            composer.AddHoverText(
+              Lang.Get("claimnavigator:hint-access-nothing"), // текст підказки
+              CairoFont.WhiteDetailText(), // шрифт
+              250,                         // ширина
+              current                         // межі кнопки (не FlatCopy!)
+          );
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
@@ -772,7 +908,7 @@ namespace Claim_Navigator
             int buttonNum = 5;
 
             int dialogWidth = contentWidth + 40;
-            int dialogHeight = 60 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
+            int dialogHeight = 100 + (buttonNum * (buttonHeight + verticalSpacing)); // назад + інпут + 3 кнопки
 
             string groupNameBuffer = "";
             double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
@@ -853,6 +989,13 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-all-group"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current
+            );
+
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:use-group"), () =>
             {
@@ -868,6 +1011,36 @@ namespace Claim_Navigator
                 TryClose();
                 return true;
             }, current);
+
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-use-group"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current
+            );
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:traverse-group"), () =>
+            {
+                string groupName = ReadGroupName();
+                if (!string.IsNullOrWhiteSpace(groupName))
+                {
+                    _ = SendCommandsAsync(
+                        $"/land claim load {selectedIndex}",
+                        $"/land claim grantgroup {groupName} traverse",
+                        $"/land claim save {name}"
+                    );
+                }
+                TryClose();
+                return true;
+            }, current);
+
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-traverse-group"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current
+            );
 
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:unassign-group"), () =>
@@ -885,6 +1058,12 @@ namespace Claim_Navigator
                 return true;
             }, current);
 
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-unassign-group"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current
+            );
 
             composer.EndChildElements();
             SingleComposer = composer.Compose();
