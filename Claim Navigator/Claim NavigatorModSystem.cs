@@ -189,7 +189,7 @@ namespace Claim_Navigator
             int buttonHeight = 30;                // Висота однієї кнопки
             int verticalSpacing = 5;              // Відстань між кнопками
             int contentWidth = 300;               // Ширина області зі списком
-            int visibleRows = 10;                 // Скільки рядків видно без скролу
+            int visibleRows = 8;                 // Скільки рядків видно без скролу
 
             listMaxHeight = visibleRows * (buttonHeight + verticalSpacing); // Висота зони показу
 
@@ -573,6 +573,23 @@ namespace Claim_Navigator
             // Підказка (окремо, після кнопки)
             composer.AddHoverText(
                 Lang.Get("claimnavigator:hint-аllocate-claim"), // текст підказки
+                CairoFont.WhiteDetailText(), // шрифт
+                250,                         // ширина
+                current                         // межі кнопки (не FlatCopy!)
+            );
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:cancel-claim"), () =>
+            {
+                capi.SendChatMessage($"/land claim cancel");
+
+                TryClose();
+                return true;
+            }, current);
+
+            // Підказка (окремо, після кнопки)
+            composer.AddHoverText(
+                Lang.Get("claimnavigator:hint-cancel-claim"), // текст підказки
                 CairoFont.WhiteDetailText(), // шрифт
                 250,                         // ширина
                 current                         // межі кнопки (не FlatCopy!)
