@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -182,6 +183,8 @@ namespace Claim_Navigator
             }
         }
 
+        GuiElementContainer listContainer; // глобально оголошуємо, щоб оновлювати пізніше
+        string searchText = "";
         // ===================== ГОЛОВНЕ МЕНЮ СПИСКУ ПРИВАТІВ =====================
         void BuildListMenu()
         {
@@ -190,11 +193,12 @@ namespace Claim_Navigator
             int verticalSpacing = 5;              // Відстань між кнопками
             int contentWidth = 300;               // Ширина області зі списком
             int visibleRows = 8;                 // Скільки рядків видно без скролу
+            int scrollbarWidth = 12; // Ширина скролбара
 
             listMaxHeight = visibleRows * (buttonHeight + verticalSpacing); // Висота зони показу
 
             int dialogWidth = contentWidth + 40;  // Загальна ширина вікна
-            int dialogHeight = 60 + listMaxHeight;// Загальна висота вікна
+            int dialogHeight = 90 + listMaxHeight;// Загальна висота вікна
 
             listTotalHeight = 35 + buttonCount * (buttonHeight + verticalSpacing); // Повна висота всіх кнопок
 
@@ -207,25 +211,51 @@ namespace Claim_Navigator
             listClipBounds = ElementBounds.Fixed(0, 40, contentWidth, listMaxHeight)
                 .WithFixedPadding(10, 10);
 
-            int scrollbarWidth = 12; // Ширина скролбара
-            ElementBounds scrollbarBounds = ElementBounds.Fixed(contentWidth - scrollbarWidth, 0, scrollbarWidth, listMaxHeight);
 
-
+            ElementBounds scrollbarBounds = ElementBounds.Fixed(contentWidth - scrollbarWidth, 30, scrollbarWidth, listMaxHeight);
 
             // Створюємо GUI-композер
             var composer = capi.Gui
                 .CreateCompo("privatesdialog", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill) // Темний фон
                 .AddDialogBG(ElementBounds.Fill, false) // Світлий фон діалогу
-                .AddDialogTitleBar(Lang.Get("claimnavigator:title-buildlistmenu"), () => TryClose()) // Заголовок
+                .AddDialogTitleBar(Lang.Get("claimnavigator:title-buildlistmenu"), () => TryClose()); // Заголовок
 
-                .BeginChildElements(listClipBounds)
-                    .AddVerticalScrollbar(OnScrollChanged, scrollbarBounds, ScrollbarKey) // Додаємо скрол
-                    .BeginClip(ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listMaxHeight))
-                        .BeginChildElements(
-                            listContentBounds = ElementBounds.Fixed(0, 0, contentWidth - scrollbarWidth, listTotalHeight)
-                        );
+            // Поле пошуку
+            ElementBounds searchBoxBounds = ElementBounds.Fixed(20, 30, contentWidth - 40, 30);
+            double[] placeholderColor = new double[] { 0.75, 0.62, 0.50, 1.0 };
+            composer.AddTextInput(
+                searchBoxBounds,
+                 (string newText) =>
+                 {
+                     searchText = newText;
+                     UpdateListContainer();
+                     SingleComposer?.GetDynamicText("ph_search")?.SetNewText(string.IsNullOrEmpty(searchText) ? Lang.Get("поиск") : "");
+                 },
+                CairoFont.WhiteSmallText(),
+                "searchInput"
+            );
+            composer.AddDynamicText(Lang.Get("поиск"), CairoFont.WhiteSmallText().WithColor(placeholderColor), searchBoxBounds.FlatCopy().WithFixedOffset(5, 5), "ph_search");
 
+
+            composer.BeginChildElements(listClipBounds)
+                .AddVerticalScrollbar(OnScrollChanged, scrollbarBounds, ScrollbarKey) // Додаємо скрол
+                .BeginClip(ElementBounds.Fixed(0, 15, contentWidth - scrollbarWidth, listMaxHeight))
+                    .BeginChildElements(
+                        listContentBounds = ElementBounds.Fixed(0, 35, contentWidth - scrollbarWidth, listTotalHeight)
+                    );
+
+            // Створюємо копію меж, щоб уникнути самопосилання
+            ElementBounds containerBounds = ElementBounds.Fixed(
+                listContentBounds.fixedX,
+                listContentBounds.fixedY,
+                listContentBounds.fixedWidth,
+                listContentBounds.fixedHeight
+            );
+
+            // 🧱 СТВОРЮЄМО КОНТЕЙНЕР
+            listContainer = new GuiElementContainer(capi, containerBounds);
+            composer.AddInteractiveElement(listContainer, "listContainer");
 
 
 
@@ -233,12 +263,13 @@ namespace Claim_Navigator
 
             // кнопка створення приватів
             composer.AddSmallButton(Lang.Get("claimnavigator:title-newclaimmenu"), () =>
-            {
-                NewClaimMenu();
-                return true;
-            }, current);
+             {
+                 NewClaimMenu();
+                 return true;
+             }, current);
 
             current = current.BelowCopy(0, verticalSpacing);
+
 
             // Додаємо кнопки з назвами приватів
             for (int i = 0; i < buttonCount; i++)
@@ -246,17 +277,24 @@ namespace Claim_Navigator
                 string name = privatesList[i];
                 int index = i;
 
-                // capi.Logger.Notification($"{i}: {current.fixedY}"); // для перевірки listTotalHeight
+                var btn = new GuiElementTextButton(
+                    capi,
+                    $"{index + 1}. {name}",
+                    CairoFont.WhiteSmallText(),
+                    CairoFont.WhiteSmallText(),
+                    () =>
+                    {
+                        selectedClaim = name;
+                        selectedIndex = index;
+                        ActionMenu(name);
+                        return true;
+                    },
+                    current
+                );
 
-                composer.AddSmallButton($"{index + 1}. {name}", () =>
-                {
-                    selectedClaim = name; // Запам'ятовуємо вибраний приват
-                    selectedIndex = index;  // Запам'ятовуємо його індекс
-                    ActionMenu(name);       // Переходимо до підменю
-                    return true;
-                }, current);
 
-                current = current.BelowCopy(0, verticalSpacing); // Переносимо позицію для наступної кнопки
+                listContainer.Add(btn);
+                current = current.BelowCopy(0, verticalSpacing);
             }
 
             // Завершення формування GUI
@@ -275,6 +313,64 @@ namespace Claim_Navigator
             }
         }
 
+        void UpdateListContainer()
+        {
+            if (listContainer == null) return;
+
+            listContainer.Clear();
+
+            int buttonHeight = 30;
+            int verticalSpacing = 5;
+            int contentWidth = 300;
+
+            ElementBounds current = ElementBounds.Fixed(10, 15, contentWidth - 40, buttonHeight);
+
+            // Фільтрація по тексту
+            var filtered = privatesList
+                .Where(name => string.IsNullOrEmpty(searchText)
+                 || name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+
+
+            // Додаємо кнопки у контейнер
+            for (int i = 0; i < filtered.Count; i++)
+            {
+                string name = filtered[i];
+                int index = privatesList.IndexOf(name); // інтекс треба шукати айді списку privatesList
+
+                var btn = new GuiElementTextButton(
+                    capi,
+                    $"{index + 1}. {name}",
+                    CairoFont.WhiteSmallText(), //.WithStroke(new double[] { 0, 0, 0, 1 }, 2),
+                    CairoFont.WhiteSmallText(),
+                    new ActionConsumable(() =>
+                    {
+                        selectedClaim = name;
+                        selectedIndex = index;
+                        ActionMenu(name);
+                        return true;
+                    }),
+                    current
+                );
+
+                listContainer.Add(btn);
+                current = current.BelowCopy(0, verticalSpacing);
+            }
+
+            // Оновлення висоти для скролу
+            listTotalHeight = filtered.Count * (buttonHeight + verticalSpacing);
+            var sb = SingleComposer.GetScrollbar(ScrollbarKey);
+            if (sb != null)
+            {
+                sb.SetHeights(listMaxHeight, listTotalHeight);
+                sb.CurrentYPosition = 0;
+                OnScrollChanged(sb.CurrentYPosition);
+            }
+
+            // Перерахунок меж контейнера
+            listContainer.Bounds.fixedHeight = listTotalHeight;
+            listContainer.Bounds.CalcWorldBounds();
+        }
 
         // ===================== ПІДМЕНЮ СТВОРЕННЯ ПРИВАТІВ =====================
         void NewClaimMenu()
