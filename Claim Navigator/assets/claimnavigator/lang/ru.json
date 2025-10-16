@@ -39,6 +39,7 @@
     "use-group": "Ограниченый доступ",
     "traverse-group": "Доступ к дверям",
     "unassign-group": "Убрать доступ",
+    "text-search": "Поиск",
     "hint-аllocate-claim": "Выделить границы выбранного привата",
     "hint-cancel-claim": "Убрать выделение любого привата",
     "hint-delete-claim": "Удалить выбранный приват",

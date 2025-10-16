@@ -39,6 +39,7 @@
     "use-group": "Обмежений доступ",
     "traverse-group": "Доступ до дверей/люків",
     "unassign-group": "Скасувати доступ",
+    "text-search": "Пошук",
     "hint-аllocate-claim": "Виділити межі вибраного привату.",
     "hint-cancel-claim": "Прибрати межі любого привату.",
     "hint-delete-claim": "Видалити вибраний приват.",

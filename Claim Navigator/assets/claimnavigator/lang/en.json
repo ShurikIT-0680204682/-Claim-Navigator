@@ -39,6 +39,7 @@
     "use-group": "Limited Access",
     "traverse-group": "Door/Trapdoor Access",
     "unassign-group": "Remove access",
+    "text-search": "Search",
     "hint-аllocate-claim": "Highlight boundaries of the selected claim.",
     "hint-cancel-claim": "Remove the boundaries of any claims.",
     "hint-delete-claim": "Delete the selected claim.",
