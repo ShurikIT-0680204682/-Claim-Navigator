@@ -269,7 +269,8 @@ namespace Claim_Navigator
             // кнопка створення приватів
             composer.AddSmallButton(Lang.Get("claimnavigator:title-newclaimmenu"), () =>
              {
-                 NewClaimMenu();
+                 string name = null;
+                 NewClaimMenu(name);
                  return true;
              }, current);
 
@@ -384,7 +385,7 @@ namespace Claim_Navigator
 
 
         // ===================== ПІДМЕНЮ СТВОРЕННЯ ПРИВАТІВ =====================
-        void NewClaimMenu()
+        void NewClaimMenu(string name)
         {
             int buttonHeight = 30;
             int verticalSpacing = 10;
@@ -396,6 +397,14 @@ namespace Claim_Navigator
 
             int dialogWidth = (inputWidth + gap) * 3 + 40;
             int dialogHeight = 500;
+
+            string title = Lang.Get("claimnavigator:title-newclaimmenu");
+
+            if (name != null)
+            {
+                title = Lang.Get("claimnavigator:title-expand-claim", name);
+
+            }
 
             ElementBounds dialogBounds = ElementBounds.Fixed(0, 0, dialogWidth, dialogHeight)
                 .WithAlignment(EnumDialogArea.CenterMiddle)
@@ -409,7 +418,7 @@ namespace Claim_Navigator
                 .CreateCompo("newclaim", dialogBounds)
                 .AddShadedDialogBG(ElementBounds.Fill)
                 .AddDialogBG(ElementBounds.Fill, false)
-                .AddDialogTitleBar(Lang.Get("claimnavigator:title-newclaimmenu"), () => TryClose())
+                .AddDialogTitleBar(title, () => TryClose())
                 .BeginChildElements(contentBounds);
 
             // Кнопка назад (прибрати/змінити якщо не потрібно)
@@ -422,19 +431,22 @@ namespace Claim_Navigator
                 return true;
             }, Bttn);
 
-            Bttn = Bttn.BelowCopy(0, verticalSpacing);
-            composer.AddSmallButton(Lang.Get(Lang.Get("claimnavigator:create-claim-new")), () =>
+            if (name == null)
             {
-                capi.SendChatMessage($"/land claim new");
-                return true;
-            }, Bttn);
+                Bttn = Bttn.BelowCopy(0, verticalSpacing);
+                composer.AddSmallButton(Lang.Get(Lang.Get("claimnavigator:create-claim-new")), () =>
+                {
+                    capi.SendChatMessage($"/land claim new");
+                    return true;
+                }, Bttn);
 
-            composer.AddHoverText(
-                Lang.Get("claimnavigator:hint-create-claim-new"), // текст підказки
-                CairoFont.WhiteDetailText(), // шрифт
-                250,                         // ширина
-                Bttn                         // межі кнопки (не FlatCopy!)
-            );
+                composer.AddHoverText(
+                    Lang.Get("claimnavigator:hint-create-claim-new"), // текст підказки
+                    CairoFont.WhiteDetailText(), // шрифт
+                    250,                         // ширина
+                    Bttn                         // межі кнопки (не FlatCopy!)
+                );
+            }
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-start"), () =>
@@ -595,7 +607,8 @@ namespace Claim_Navigator
             composer.AddDynamicText(Lang.Get("claimnavigator:create-claim-name"),
                 CairoFont.WhiteSmallText().WithColor(placeholderColor),
                 applyBtn.FlatCopy().WithFixedOffset(5, 5),
-                "ph_name");
+                "ph_name"
+            );
 
             // Save під полем, тієї ж ширини
             applyBtn = applyBtn.BelowCopy(0, verticalSpacing);
@@ -620,6 +633,16 @@ namespace Claim_Navigator
             composer.EndChildElements();
             SingleComposer = composer.Compose();
 
+            if (name != null)
+            {
+                SingleComposer.GetTextInput("claimName")?.SetValue(name);
+                nameClaimBuf = name;
+
+                // сховати placeholder
+                SingleComposer.GetDynamicText("ph_name")?.SetNewText("");
+            }
+
+
             // Початкова видимість placeholder-ів (якщо в полях вже є текст)
             SingleComposer?.GetDynamicText("ph_north")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("north")?.GetText() ?? "") ? Lang.Get("claimnavigator:north") : "");
             SingleComposer?.GetDynamicText("ph_south")?.SetNewText(string.IsNullOrEmpty(SingleComposer?.GetTextInput("south")?.GetText() ?? "") ? Lang.Get("claimnavigator:south") : "");
@@ -636,7 +659,7 @@ namespace Claim_Navigator
             int buttonHeight = 30;  // Висота однієї кнопки
             int verticalSpacing = 10;  // Відстань між кнопками
             int contentWidth = 300; // Ширина області зі списком
-            int buttonCount = 7;
+            int buttonCount = 8;
 
             int dialogWidth = contentWidth + 40;
             int dialogHeight = 60 + (buttonCount * (buttonHeight + verticalSpacing));
@@ -719,6 +742,26 @@ namespace Claim_Navigator
                250,                         // ширина
                current
            );
+
+
+            current = current.BelowCopy(0, verticalSpacing);
+            composer.AddSmallButton(Lang.Get("claimnavigator:expand-claim"), () =>
+            {
+                _ = SendCommandsAsync(
+                  $"/land claim load {selectedIndex}"
+                );
+                NewClaimMenu(name);
+                return true;
+            }, current);
+
+
+            composer.AddHoverText(
+               Lang.Get("claimnavigator:hint-expand-claim"), // текст підказки
+               CairoFont.WhiteDetailText(), // шрифт
+               250,                         // ширина
+               current
+           );
+
 
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:general-claim"), () =>

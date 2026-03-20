@@ -6,11 +6,13 @@
     "title-submenuplayeraccess": "Player access to claim: {0}",
     "title-submenugeneralaccessu": "Access for all players: {0} ",
     "title-newclaimmenu": "Сreate claim",
+    "title-expand-claim": "Expand claim: {0}",
     "title-submenugroupaccess": "Group access to claim: {0}",
     "back": "← Back",
     "аllocate-claim": "Аllocate claim",
     "cancel-claim": "Remove selection",
     "delete-claim": "Delete claim",
+    "expand-claim": "Expand claim",
     "general-claim": "General access",
     "player-claim": "Player access",
     "group-claim": "Group access",
@@ -61,6 +63,7 @@
     "hint-create-claim-end": "Set the ending corner point for the claim area.",
     "hint-create-claim-grow": "Grows the claim area in any direction by the number of blocks specified above.",
     "hint-create-claim-add": "Adds the newly defined area to the claim.",
-    "hint-create-claim-save": "Saves the claim with the name entered above."
+    "hint-create-claim-save": "Saves the claim with the name entered above.",
+    "hint-expand-claim": "Allows you to attach additional areas to an existing claim without using the claim limit (must be contiguous to the main claim)."
 
 }
