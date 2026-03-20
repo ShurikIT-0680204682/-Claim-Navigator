@@ -16,6 +16,10 @@ namespace Claim_Navigator
         ICoreClientAPI capi;
         ClaimsGui currentGui;
 
+
+        //цей метод нижче і запускає програму
+        // тепер звідси ти можеш викликати команди з тамтої бібліотеки
+
         public override void StartClientSide(ICoreClientAPI api)
         {
             capi = api;
@@ -185,6 +189,7 @@ namespace Claim_Navigator
 
         GuiElementContainer listContainer; // глобально оголошуємо, щоб оновлювати пізніше
         string searchText = "";
+
         // ===================== ГОЛОВНЕ МЕНЮ СПИСКУ ПРИВАТІВ =====================
         void BuildListMenu()
         {
@@ -270,6 +275,7 @@ namespace Claim_Navigator
 
             current = current.BelowCopy(0, verticalSpacing);
 
+            UpdateListContainer();
 
             // Додаємо кнопки з назвами приватів
             for (int i = 0; i < buttonCount; i++)
@@ -296,6 +302,7 @@ namespace Claim_Navigator
                 listContainer.Add(btn);
                 current = current.BelowCopy(0, verticalSpacing);
             }
+
 
             // Завершення формування GUI
             composer.EndChildElements();
