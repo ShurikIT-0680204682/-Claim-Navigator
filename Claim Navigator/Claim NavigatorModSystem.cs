@@ -447,6 +447,25 @@ namespace Claim_Navigator
                     Bttn                         // межі кнопки (не FlatCopy!)
                 );
             }
+            else
+            {
+                Bttn = Bttn.BelowCopy(0, verticalSpacing);
+                composer.AddSmallButton(Lang.Get("claimnavigator:аllocate-claim"), () =>
+                {
+                    capi.SendChatMessage($"/land claim load {selectedIndex}");
+
+                    TryClose();
+                    return true;
+                }, Bttn);
+
+                // Підказка (окремо, після кнопки)
+                composer.AddHoverText(
+                    Lang.Get("claimnavigator:hint-аllocate-claim"), // текст підказки
+                    CairoFont.WhiteDetailText(), // шрифт
+                    250,                         // ширина
+                    Bttn                         // межі кнопки (не FlatCopy!)
+                );
+            }
 
             Bttn = Bttn.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:create-claim-start"), () =>
@@ -747,13 +766,9 @@ namespace Claim_Navigator
             current = current.BelowCopy(0, verticalSpacing);
             composer.AddSmallButton(Lang.Get("claimnavigator:expand-claim"), () =>
             {
-                _ = SendCommandsAsync(
-                  $"/land claim load {selectedIndex}"
-                );
                 NewClaimMenu(name);
                 return true;
             }, current);
-
 
             composer.AddHoverText(
                Lang.Get("claimnavigator:hint-expand-claim"), // текст підказки
