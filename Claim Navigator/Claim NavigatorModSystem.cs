@@ -61,8 +61,9 @@ namespace Claim_Navigator
                 Lang.Get("claimnavigator:search-client-log"),
                 "Your land claims:",    // англійська
                 "Ваши земельные участки:",   // російська
-                "Ваші ділянки:"   // українська
-       
+                "Ваші ділянки:",   // українська
+                "Suas reivindicações de área:", // португальська (Бразиль)
+                "Tus regiones protegidas:" // іспанська (Іспанія)
             };
 
             if (!File.Exists(path))
