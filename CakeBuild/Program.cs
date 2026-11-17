@@ -26,7 +26,7 @@ namespace CakeBuild
 
     public class BuildContext : FrostingContext
     {
-        public const string ProjectName = "Private_Navigator";
+        public const string ProjectName = "Claim Navigator";
         public string BuildConfiguration { get; }
         public string Version { get; }
         public string Name { get; }
