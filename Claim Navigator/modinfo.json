@@ -3,7 +3,7 @@
     "modid": "claimnavigator",
     "name": "Claim_Navigator",
     "authors": [
-        "ShuriKIT"
+        "ShuriKIT, Hukko"
     ],
     "side": "Client",
     "description": "Convenient Interface for Land Claims",
