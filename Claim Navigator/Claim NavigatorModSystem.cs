@@ -25,6 +25,10 @@ namespace Claim_Navigator
 
         // У приват уже додано хоча б одну область (сервер відповів на add успіхом)
         public bool HasArea;
+
+        // Області, додані в цій сесії (x1, y1, z1, x2, y2, z2), — ще не збережені, тому їх немає
+        // у клієнтському списку приватів, а нове виділення має їх торкатися і не перетинати
+        public List<int[]> Added = new List<int[]>();
     }
 
     public class Claim_Navigator : ModSystem

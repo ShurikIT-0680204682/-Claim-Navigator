@@ -407,6 +407,12 @@ namespace Claim_Navigator
         private const int ButtonTextPad = 24;
         private const int MaxMemberLabelWidth = 320;
 
+        // Скільки місця під рядок учасника є завжди, навіть якщо кнопки внизу вузькі
+        private const int MinMemberLabelWidth = 200;
+
+        // Проміжок між кнопками в одному рядку (сітка у вікні «Учасники»)
+        private const int GridGap = 10;
+
         // Ширина тексту в немасштабованих одиницях інтерфейсу
         private static int TextWidth(CairoFont font, string text)
         {
@@ -415,6 +421,52 @@ namespace Claim_Navigator
                 return 0;
             }
             return (int)Math.Ceiling(font.GetTextExtents(text).XAdvance / RuntimeEnv.GUIScale);
+        }
+
+        // Текст, обрізаний з трикрапкою так, щоб вліз у maxWidth, — замість перенесення на другий рядок
+        private static string Fit(CairoFont font, string text, int maxWidth)
+        {
+            if (string.IsNullOrEmpty(text) || TextWidth(font, text) <= maxWidth)
+            {
+                return text;
+            }
+            for (int length = text.Length - 1; length > 0; length--)
+            {
+                string cut = text.Substring(0, length).TrimEnd() + "…";
+                if (TextWidth(font, cut) <= maxWidth)
+                {
+                    return cut;
+                }
+            }
+            return "…";
+        }
+
+        // Рядок учасника «ім'я — рівень», не ширший за maxWidth: якщо не влазить, скорочується
+        // лише ім'я (з трикрапкою), а рівень доступу лишається видно повністю
+        private static string FitName(string key, string name, string level, int maxWidth)
+        {
+            CairoFont font = CairoFont.WhiteSmallText();
+            string label = L(key, name, level);
+            if (TextWidth(font, label) <= maxWidth)
+            {
+                return label;
+            }
+            for (int length = name.Length - 1; length > 0; length--)
+            {
+                label = L(key, name.Substring(0, length).TrimEnd() + "…", level);
+                if (TextWidth(font, label) <= maxWidth)
+                {
+                    return label;
+                }
+            }
+            return Fit(font, L(key, "…", level), maxWidth);
+        }
+
+        // Початок UID для показу (UID гравця — 24 символи й не влазить у рядок).
+        // Повний UID — у підказці при наведенні, команди відправляються з повним
+        private static string ShortUid(string uid)
+        {
+            return (uid.Length > 8) ? (uid.Substring(0, 8) + "…") : uid;
         }
 
         // Рядок із кнопкою заданої ширини по центру вікна
@@ -435,7 +487,7 @@ namespace Claim_Navigator
             }, bounds);
             if (hint != null)
             {
-                composer.AddHoverText(hint, CairoFont.WhiteDetailText(), 250, bounds);
+                composer.AddAutoSizeHoverText(hint, CairoFont.WhiteDetailText(), 250, bounds);
             }
         }
 
@@ -496,7 +548,7 @@ namespace Claim_Navigator
         private const int ListPad = 20;
         private const int ListTileWidth = 300;
         private const int ListRowGap = 5;
-        private const int ListVisibleRows = 8;
+        private const int ListVisibleRows = 11;
         private const int ListSearchY = 41;
         private const int ListTop = ListSearchY + RowHeight + 10;
         private const int ListScrollbarGap = 6;
@@ -624,11 +676,12 @@ namespace Claim_Navigator
             int width = 300;
             LandClaim claim = selected;
             string name = ClaimName(claim);
-            int members = claim.PermittedPlayerUids.Count((KeyValuePair<string, EnumBlockAccessFlags> p) => p.Value != EnumBlockAccessFlags.None) + claim.PermittedPlayerGroupIds.Count((KeyValuePair<int, EnumBlockAccessFlags> p) => p.Value != EnumBlockAccessFlags.None);
-            GuiComposer composer = Begin("privatedetails", L("title-actionmenu", name), width, 10);
+            // Гравці, групи та загальний доступ — усе це тепер у вікні «Учасники»
+            int members = GetMembers(claim).Count;
+            GuiComposer composer = Begin("privatedetails", L("title-actionmenu", name), width, 7);
             int y = 10;
             AddButton(composer, Row(ref y, width), L("back"), null, BuildListMenu);
-            AddButton(composer, Row(ref y, width), L("аllocate-claim"), L("hint-аllocate-claim"), delegate
+            AddButton(composer, Row(ref y, width), L("allocate-claim"), L("hint-allocate-claim"), delegate
             {
                 int index = ResolveSelected();
                 if (index >= 0 && Run(new List<string> { $"/land claim load {index}" }))
@@ -650,9 +703,6 @@ namespace Claim_Navigator
             {
                 MembersMenu();
             });
-            AddButton(composer, Row(ref y, width), L("player-claim"), L("hint-player-claim"), SubmenuPlayerAccess);
-            AddButton(composer, Row(ref y, width), L("group-claim"), L("hint-group-claim"), SubmenuGroupAccess);
-            AddButton(composer, Row(ref y, width), L("general-claim"), L("hint-general-claim"), SubmenuGeneralAccess);
             AddButton(composer, Row(ref y, width), confirmDelete ? L("delete-claim-confirm") : L("delete-claim"), L("hint-delete-claim"), delegate
             {
                 if (!confirmDelete)
@@ -678,12 +728,13 @@ namespace Claim_Navigator
 
         private class Member
         {
-            public string Label;
+            // Текст рядка під задану ширину: «ім'я — рівень», коли бракує місця, скорочується ім'я
+            public System.Func<int, string> Text;
 
             public string Hover;
 
-            // Команда для виключення; null — виключити командою не можна (група з невідомою назвою)
-            public string RevokeCommand;
+            // Команди для виключення; null — виключити командою не можна (група з невідомою назвою)
+            public string[] RevokeCommands;
 
             public string Name;
 
@@ -694,11 +745,49 @@ namespace Claim_Navigator
 
             // Команда видачі доступу, {0} — use / traverse / all; null — змінити доступ командою не можна
             public string GrantFormat;
+
+            // Своє меню для кнопки «Доступ» замість вибору рівня (загальний доступ)
+            public Action<int> AccessMenu;
+        }
+
+        // Текст загального доступу привату або null, якщо він вимкнений
+        private static string EveryoneText(LandClaim claim)
+        {
+            if (claim.AllowUseEveryone && claim.AllowTraverseEveryone)
+            {
+                return L("everyone-both");
+            }
+            if (claim.AllowUseEveryone)
+            {
+                return L("perm-use");
+            }
+            return claim.AllowTraverseEveryone ? L("perm-traverse") : null;
         }
 
         private List<Member> GetMembers(LandClaim claim)
         {
             List<Member> members = new List<Member>();
+            // Загальний доступ показуємо як учасника «Усі гравці», першим у списку
+            string everyone = EveryoneText(claim);
+            if (everyone != null)
+            {
+                List<string> revoke = new List<string>();
+                if (claim.AllowUseEveryone)
+                {
+                    revoke.Add("/land claim allowuseeveryone false");
+                }
+                if (claim.AllowTraverseEveryone)
+                {
+                    revoke.Add("/land claim allowtraverseveryone false");
+                }
+                members.Add(new Member
+                {
+                    Text = (int w) => Fit(CairoFont.WhiteSmallText(), L("member-everyone", everyone), w),
+                    Hover = L("hint-member-everyone"),
+                    RevokeCommands = revoke.ToArray(),
+                    AccessMenu = SubmenuGeneralAccess
+                });
+            }
             foreach (KeyValuePair<string, EnumBlockAccessFlags> pair in claim.PermittedPlayerUids)
             {
                 if (pair.Value == EnumBlockAccessFlags.None)
@@ -707,13 +796,14 @@ namespace Claim_Navigator
                 }
                 string uid = pair.Key;
                 string playerName = mod.NameFor(uid, claim);
+            string level = PermText(pair.Value);
                 members.Add(new Member
                 {
-                    Label = L("member-player", playerName ?? ("UID " + uid), PermText(pair.Value)),
-                    Hover = "UID: " + uid,
+                    Text = (int w) => FitName("member-player", playerName ?? ("UID " + ShortUid(uid)), level, w),
+                    Hover = ((playerName != null) ? (playerName + "\n") : "") + "UID: " + uid,
                     // За UID сервер знаходить гравця, навіть якщо той змінив нік
-                    RevokeCommand = "/land claim revoke " + uid,
-                    Name = playerName ?? ("UID " + uid),
+                    RevokeCommands = new string[1] { "/land claim revoke " + uid },
+                    Name = playerName ?? ("UID " + ShortUid(uid)),
                     // Повторна видача того самого рівня нічого не змінює, але сервер записує в приват ім'я гравця
                     RenameCommand = ((playerName == null) ? ("/land claim grant " + uid + " " + LevelOf(pair.Value)) : null),
                     Flags = pair.Value,
@@ -728,11 +818,12 @@ namespace Claim_Navigator
                 }
                 // Назву групи клієнт знає, лише якщо сам у ній перебуває
                 string groupName = capi.World.Player.GetGroup(pair.Key)?.GroupName;
+            string level = PermText(pair.Value);
                 members.Add(new Member
                 {
-                    Label = L("member-group", groupName ?? ("#" + pair.Key), PermText(pair.Value)),
-                    Hover = ((groupName == null) ? L("hint-member-group-unknown") : ("ID: " + pair.Key)),
-                    RevokeCommand = ((groupName == null) ? null : ("/land claim revokegroup " + groupName)),
+                    Text = (int w) => FitName("member-group", groupName ?? ("#" + pair.Key), level, w),
+                    Hover = ((groupName == null) ? L("hint-member-group-unknown") : (groupName + "\nID: " + pair.Key)),
+                    RevokeCommands = ((groupName == null) ? null : new string[1] { "/land claim revokegroup " + groupName }),
                     Name = L("member-group-name", groupName ?? ("#" + pair.Key)),
                     Flags = pair.Value,
                     GrantFormat = ((groupName == null) ? null : ("/land claim grantgroup " + groupName + " {0}"))
@@ -748,33 +839,45 @@ namespace Claim_Navigator
             int pages = Math.Max(1, (members.Count + MembersPerPage - 1) / MembersPerPage);
             page = GameMath.Clamp(page, 0, pages - 1);
             List<Member> shown = members.Skip(page * MembersPerPage).Take(MembersPerPage).ToList();
-            List<string> revokeAll = members.Where((Member m) => m.RevokeCommand != null).Select((Member m) => m.RevokeCommand).ToList();
-            bool everyone = claim.AllowUseEveryone || claim.AllowTraverseEveryone;
+            List<string> revokeAll = members.Where((Member m) => m.RevokeCommands != null).SelectMany((Member m) => m.RevokeCommands).ToList();
+            int revokeCount = members.Count((Member m) => m.RevokeCommands != null);
             List<string> renameAll = members.Where((Member m) => m.RenameCommand != null).Select((Member m) => m.RenameCommand).ToList();
             CairoFont textFont = CairoFont.WhiteSmallText();
             CairoFont buttonFont = CairoFont.SmallButtonText();
             string countText = (members.Count == 0) ? L("members-empty") : L("members-count", members.Count);
-            string everyoneText = !everyone ? null : ((claim.AllowUseEveryone && claim.AllowTraverseEveryone) ? L("members-everyone-both") : (claim.AllowUseEveryone ? L("members-everyone-use") : L("members-everyone-traverse")));
-            string removeAllText = confirmAll ? L("members-remove-all-confirm", revokeAll.Count) : L("members-remove-all");
-            // Ширина вікна — за вмістом: найдовше ім'я + кнопки «Доступ»/«Прибрати» одразу за ним.
-            // Нижні кнопки однакової ширини, трохи більші за найдовший напис, і по центру
+            string removeAllText = confirmAll ? L("members-remove-all-confirm", revokeCount) : L("members-remove-all");
             int accessWidth = TextWidth(buttonFont, L("member-access")) + ButtonTextPad;
             int removeWidth = TextWidth(buttonFont, L("member-remove")) + ButtonTextPad;
-            int labelWidth = Math.Min(MaxMemberLabelWidth, shown.Select((Member m) => TextWidth(textFont, m.Label)).DefaultIfEmpty(0).Max());
-            int rowWidth = labelWidth + 15 + accessWidth + 5 + removeWidth;
-            List<string> wideTexts = new List<string> { L("back"), L("members-add-player") };
+            // Нижні кнопки — сіткою 2×2: «Додати гравця» | «Додати групу», «Загальний доступ» | «Видалити всіх».
+            // Ширина комірки — за найдовшим написом, у «Видалити всіх» одразу за обома його варіантами,
+            // щоб вікно не змінювало ширину після першого натискання
+            List<string> gridTexts = new List<string>
+            {
+                L("members-add-player"),
+                L("members-add-group"),
+                L("general-claim")
+            };
             if (revokeAll.Count > 0)
             {
-                wideTexts.Add(removeAllText);
+                gridTexts.Add(L("members-remove-all"));
+                gridTexts.Add(L("members-remove-all-confirm", revokeCount));
             }
+            int cellWidth = gridTexts.Max((string t) => TextWidth(buttonFont, t)) + ButtonTextPad;
+            int gridWidth = cellWidth * 2 + GridGap;
+            List<string> wideTexts = new List<string> { L("back") };
             if (renameAll.Count > 0)
             {
                 wideTexts.Add(L("members-resolve-names", renameAll.Count));
             }
-            int wideButtonWidth = wideTexts.Max((string t) => TextWidth(buttonFont, t)) + ButtonTextPad * 2;
-            int width = Math.Max(Math.Max(rowWidth, wideButtonWidth), Math.Max(TextWidth(textFont, countText), (everyoneText != null) ? TextWidth(textFont, everyoneText) : 0));
-            width = Math.Max(width, 240);
-            int rows = 2 + (everyone ? 1 : 0) + shown.Count + ((pages > 1) ? 1 : 0) + 1 + ((revokeAll.Count > 0) ? 1 : 0) + ((renameAll.Count > 0) ? 1 : 0);
+            // «Назад» і «Дізнатися імена» — на всю ширину сітки
+            int wideButtonWidth = Math.Max(wideTexts.Max((string t) => TextWidth(buttonFont, t)) + ButtonTextPad * 2, gridWidth);
+            // Ширина вікна — за кнопками й написом зверху, а не за іменами на сторінці: так вона одна на всіх
+            // сторінках. Рядки учасників (ім'я — рівень) підрізаються під цю ширину, рівень завжди видно
+            int rowButtonsWidth = 15 + accessWidth + 5 + removeWidth;
+            int width = Math.Max(Math.Max(wideButtonWidth, TextWidth(textFont, countText)), Math.Max(240, (members.Count > 0) ? (MinMemberLabelWidth + rowButtonsWidth) : 0));
+            int labelWidth = Math.Min(MaxMemberLabelWidth, width - rowButtonsWidth);
+            // Назад, лічильник, учасники, сторінки, «дізнатися імена», два рядки сітки
+            int rows = 2 + shown.Count + ((pages > 1) ? 1 : 0) + ((renameAll.Count > 0) ? 1 : 0) + 2;
             GuiComposer composer = Begin("claimmembers", L("title-members", ClaimName(claim)), width, rows);
             int y = 10;
             AddButton(composer, CenteredRow(ref y, width, wideButtonWidth), L("back"), null, delegate
@@ -784,30 +887,33 @@ namespace Claim_Navigator
             // Без учасників під написом немає рядків з іменами — тоді ставимо його по центру, як кнопки
             EnumTextOrientation infoOrientation = (shown.Count == 0) ? EnumTextOrientation.Center : EnumTextOrientation.Left;
             composer.AddStaticText(countText, textFont, infoOrientation, Row(ref y, width).WithFixedOffset(0.0, 7.0));
-            if (everyone)
-            {
-                composer.AddStaticText(everyoneText, textFont, infoOrientation, Row(ref y, width).WithFixedOffset(0.0, 7.0));
-            }
             foreach (Member member in shown)
             {
-                ElementBounds textBounds = ElementBounds.Fixed(10.0, y + 7, width - accessWidth - removeWidth - 20, RowHeight - 7);
+                ElementBounds textBounds = ElementBounds.Fixed(10.0, y + 7, width - accessWidth - removeWidth - 10, RowHeight - 7);
                 ElementBounds accessBounds = ElementBounds.Fixed(10 + width - removeWidth - 5 - accessWidth, y, accessWidth, RowHeight);
                 ElementBounds buttonBounds = ElementBounds.Fixed(10 + width - removeWidth, y, removeWidth, RowHeight);
-                if (member.GrantFormat != null)
+                if (member.GrantFormat != null || member.AccessMenu != null)
                 {
                     Member target = member;
                     int returnPage = page;
                     AddButton(composer, accessBounds, L("member-access"), L("hint-member-access"), delegate
                     {
-                        MemberAccessMenu(target, returnPage);
+                        if (target.AccessMenu != null)
+                        {
+                            target.AccessMenu(returnPage);
+                        }
+                        else
+                        {
+                            MemberAccessMenu(target, returnPage);
+                        }
                     });
                 }
                 y += RowHeight + RowGap;
-                composer.AddStaticText(member.Label, textFont, textBounds);
-                composer.AddHoverText(member.Hover, CairoFont.WhiteDetailText(), 300, textBounds);
-                if (member.RevokeCommand != null)
+                composer.AddStaticText(member.Text(labelWidth), textFont, textBounds);
+                composer.AddAutoSizeHoverText(member.Hover, CairoFont.WhiteDetailText(), 400, textBounds);
+                if (member.RevokeCommands != null)
                 {
-                    string command = member.RevokeCommand;
+                    string[] command = member.RevokeCommands;
                     int currentPage = page;
                     AddButton(composer, buttonBounds, L("member-remove"), L("hint-member-remove"), delegate
                     {
@@ -852,10 +958,24 @@ namespace Claim_Navigator
                     }, renameAll.ToArray());
                 });
             }
-            AddButton(composer, CenteredRow(ref y, width, wideButtonWidth), L("members-add-player"), L("hint-player-claim"), SubmenuPlayerAccess);
+            int gridX = 10 + (width - gridWidth) / 2;
+            ElementBounds Cell(int column, int rowY)
+            {
+                return ElementBounds.Fixed(gridX + column * (cellWidth + GridGap), rowY, cellWidth, RowHeight);
+            }
+            AddButton(composer, Cell(0, y), L("members-add-player"), L("hint-player-claim"), SubmenuPlayerAccess);
+            AddButton(composer, Cell(1, y), L("members-add-group"), L("hint-group-claim"), SubmenuGroupAccess);
+            y += RowHeight + RowGap;
+            int generalPage = page;
+            // Видаляти нікого — «Загальний доступ» один у другому рядку, по центру
+            ElementBounds generalBounds = (revokeAll.Count > 0) ? Cell(0, y) : ElementBounds.Fixed(10 + (width - cellWidth) / 2, y, cellWidth, RowHeight);
+            AddButton(composer, generalBounds, L("general-claim"), L("hint-general-claim"), delegate
+            {
+                SubmenuGeneralAccess(generalPage);
+            });
             if (revokeAll.Count > 0)
             {
-                AddButton(composer, CenteredRow(ref y, width, wideButtonWidth), removeAllText, L("hint-members-remove-all"), delegate
+                AddButton(composer, Cell(1, y), removeAllText, L("hint-members-remove-all"), delegate
                 {
                     if (!confirmAll)
                     {
@@ -899,12 +1019,12 @@ namespace Claim_Navigator
                     RunEdit(back, string.Format(member.GrantFormat, level));
                 });
             }
-            AddLevel("player-use", "use");
             AddLevel("player-traverse", "traverse");
+            AddLevel("player-use", "use");
             AddLevel("player-all", "all");
             AddButton(composer, Row(ref y, width), L("player-delete"), L("hint-player-delete"), delegate
             {
-                RunEdit(back, member.RevokeCommand);
+                RunEdit(back, member.RevokeCommands);
             });
             composer.EndChildElements();
             base.SingleComposer = composer.Compose();
@@ -925,7 +1045,7 @@ namespace Claim_Navigator
             int y = 10;
             AddButton(composer, Row(ref y, width), L("back"), null, delegate
             {
-                ActionMenu();
+                MembersMenu();
             });
             AddField(composer, Row(ref y, width), "playerName", L("player-name"));
             void AddAction(string textKey, string commandFormat)
@@ -939,8 +1059,8 @@ namespace Claim_Navigator
                     }
                 });
             }
-            AddAction("player-use", "/land claim grant {0} use");
             AddAction("player-traverse", "/land claim grant {0} traverse");
+            AddAction("player-use", "/land claim grant {0} use");
             AddAction("player-all", "/land claim grant {0} all");
             AddAction("player-delete", "/land claim revoke {0}");
             composer.EndChildElements();
@@ -954,7 +1074,7 @@ namespace Claim_Navigator
             int y = 10;
             AddButton(composer, Row(ref y, width), L("back"), null, delegate
             {
-                ActionMenu();
+                MembersMenu();
             });
             AddField(composer, Row(ref y, width), "groupName", L("group-name"));
             void AddAction(string textKey, string commandFormat)
@@ -968,9 +1088,9 @@ namespace Claim_Navigator
                     }
                 });
             }
-            AddAction("all-group", "/land claim grantgroup {0} all");
-            AddAction("use-group", "/land claim grantgroup {0} use");
             AddAction("traverse-group", "/land claim grantgroup {0} traverse");
+            AddAction("use-group", "/land claim grantgroup {0} use");
+            AddAction("all-group", "/land claim grantgroup {0} all");
             AddAction("unassign-group", "/land claim revokegroup {0}");
             composer.EndChildElements();
             base.SingleComposer = composer.Compose();
@@ -1023,15 +1143,17 @@ namespace Claim_Navigator
             base.SingleComposer.GetTextInput("renameName")?.SetValue(SaveName(selected));
         }
 
-        private void SubmenuGeneralAccess()
+        // Загальний доступ — як окремий учасник «Усі гравці»; returnPage — сторінка списку учасників
+        private void SubmenuGeneralAccess(int returnPage = 0)
         {
             int width = 300;
-            GuiComposer composer = Begin("generalmanage", L("title-submenugeneralaccessu", ClaimName(selected)), width, 5);
+            GuiComposer composer = Begin("generalmanage", L("title-submenugeneralaccessu", ClaimName(selected)), width, 6);
             int y = 10;
             AddButton(composer, Row(ref y, width), L("back"), null, delegate
             {
-                ActionMenu();
+                MembersMenu(returnPage);
             });
+            composer.AddStaticText(L("member-current", EveryoneText(selected) ?? L("everyone-off")), CairoFont.WhiteSmallText(), Row(ref y, width).WithFixedOffset(0.0, 7.0));
             AddButton(composer, Row(ref y, width), L("access-all"), L("hint-access-all"), delegate
             {
                 RunEdit(AfterAccessChange, "/land claim allowuseeveryone true");
@@ -1122,6 +1244,71 @@ namespace Claim_Navigator
             return false;
         }
 
+        // Перевірка виділення перед add — те саме, що перевіряє сервер (CmdLand.addCurrentArea і LandClaim.AddArea):
+        // розмір; перетин з будь-яким приватом, зокрема з вихідним своїм (на сервері він лишається у списку,
+        // поки редагується копія); перетин з уже доданими областями і стикування хоча б з однією
+        // областю привату. Не пройшло — пишемо чому й нічого не відправляємо, вікно лишається відкритим.
+        // Якщо точки невідомі — не заважаємо, вирішить сервер
+        private bool CheckPending(EditSession session, bool isNew)
+        {
+            if (!CheckPendingSize(session))
+            {
+                return false;
+            }
+            if (session?.Start == null || session.End == null)
+            {
+                return true;
+            }
+            Cuboidi area = new Cuboidi(session.Start[0], session.Start[1], session.Start[2], session.End[0], session.End[1], session.End[2]);
+            List<LandClaim> all = capi.World.Claims?.All;
+            if (all != null)
+            {
+                string me = capi.World.Player.PlayerUID;
+                foreach (LandClaim claim in all.ToArray())
+                {
+                    if (claim != null && claim.Intersects(area))
+                    {
+                        capi.ShowChatMessage((claim.OwnedByPlayerUid == me) ? L("area-overlaps-own", ClaimName(claim)) : L("area-overlaps", OwnerName(claim)));
+                        return false;
+                    }
+                }
+            }
+            List<Cuboidi> added = session.Added.Select((int[] a) => new Cuboidi(a)).ToList();
+            if (added.Any((Cuboidi a) => a.Intersects(area)))
+            {
+                capi.ShowChatMessage(L("area-overlaps-added"));
+                return false;
+            }
+            List<Cuboidi> own = new List<Cuboidi>(added);
+            if (!isNew && session.Areas != null)
+            {
+                own.AddRange(session.Areas.Select((int[] a) => new Cuboidi(a)));
+            }
+            // Стикування як у сервера: торкається гранню, ребром або кутом, але не перетинає
+            if (own.Count > 0 && !own.Any((Cuboidi a) => a.IntersectsOrTouches(area)))
+            {
+                capi.ShowChatMessage(L("area-not-adjacent"));
+                return false;
+            }
+            return true;
+        }
+
+        // Ім'я власника привату: у приватів гравців LastKnownOwnerName має вигляд "Player <ім'я>"
+        private static string OwnerName(LandClaim claim)
+        {
+            string name = claim.LastKnownOwnerName ?? "?";
+            return name.StartsWith("Player ") ? name.Substring("Player ".Length) : name;
+        }
+
+        // Запам'ятати виділення як додану область (після вдалого add)
+        private static void RememberAdded(EditSession session, int[] start, int[] end)
+        {
+            if (session != null && start != null && end != null)
+            {
+                session.Added.Add(new int[6] { start[0], start[1], start[2], end[0], end[1], end[2] });
+            }
+        }
+
         // Те саме розтягування, що робить сервер у /land claim grow (CmdLand.GrowSelection)
         private static void ApplyGrow(int[] start, int[] end, string direction, int size)
         {
@@ -1173,15 +1360,15 @@ namespace Claim_Navigator
             return best;
         }
 
-        // Розширення за сторонами світу: до вибраної області прибудовуються нові області-"пластини"
-        // потрібної товщини. Координати задаються серверу напряму (=x =y =z), ходити й ставити точки не потрібно
-        private List<string> DirectionCommands(LandClaim claim)
+        // «Розширити в сторони»: виділення-смуга потрібної товщини впритул до області привату з одного боку
+        // (виділення — один кубоїд, тому сторона одна). Лише виділення: його можна розтягнути, а додає
+        // його до привату «Розширити» або «Додати область». Повертає {початок, кінець} або null
+        private int[][] DirectionSelection(LandClaim claim, string direction, int n)
         {
-            List<string> commands = new List<string>();
             Cuboidi area = BaseArea(claim);
             if (area == null)
             {
-                return commands;
+                return null;
             }
             int minX = area.MinX;
             int minY = area.MinY;
@@ -1189,49 +1376,33 @@ namespace Claim_Navigator
             int maxX = area.MaxX;
             int maxY = area.MaxY;
             int maxZ = area.MaxZ;
-            void Slab(int x1, int y1, int z1, int x2, int y2, int z2)
+            int[][] Box(int x1, int y1, int z1, int x2, int y2, int z2)
             {
-                commands.Add($"/land claim start ={x1} ={y1} ={z1}");
-                commands.Add($"/land claim end ={x2} ={y2} ={z2}");
-                commands.Add("/land claim add");
+                return new int[2][]
+                {
+                    new int[3] { x1, y1, z1 },
+                    new int[3] { x2, y2, z2 }
+                };
             }
-            // Кожна наступна пластина будується вже від розширеного контуру, щоб кути не лишалися порожніми
-            int n = NumberField("north");
-            if (n > 0)
+            switch (direction)
             {
-                Slab(minX, minY, minZ - n, maxX, maxY, minZ);
-                minZ -= n;
+            case "north":
+                return Box(minX, minY, minZ - n, maxX, maxY, minZ);
+            case "south":
+                return Box(minX, minY, maxZ, maxX, maxY, maxZ + n);
+            case "west":
+                return Box(minX - n, minY, minZ, minX, maxY, maxZ);
+            case "east":
+                return Box(maxX, minY, minZ, maxX + n, maxY, maxZ);
+            case "up":
+                n = Math.Min(n, capi.World.BlockAccessor.MapSizeY - maxY);
+                return (n > 0) ? Box(minX, maxY, minZ, maxX, maxY + n, maxZ) : null;
+            case "down":
+                n = Math.Min(n, minY);
+                return (n > 0) ? Box(minX, minY - n, minZ, maxX, minY, maxZ) : null;
+            default:
+                return null;
             }
-            n = NumberField("south");
-            if (n > 0)
-            {
-                Slab(minX, minY, maxZ, maxX, maxY, maxZ + n);
-                maxZ += n;
-            }
-            n = NumberField("west");
-            if (n > 0)
-            {
-                Slab(minX - n, minY, minZ, minX, maxY, maxZ);
-                minX -= n;
-            }
-            n = NumberField("east");
-            if (n > 0)
-            {
-                Slab(maxX, minY, minZ, maxX + n, maxY, maxZ);
-                maxX += n;
-            }
-            n = Math.Min(NumberField("up"), capi.World.BlockAccessor.MapSizeY - maxY);
-            if (n > 0)
-            {
-                Slab(minX, maxY, minZ, maxX, maxY + n, maxZ);
-                maxY += n;
-            }
-            n = Math.Min(NumberField("down"), minY);
-            if (n > 0)
-            {
-                Slab(minX, minY - n, minZ, maxX, minY, maxZ);
-            }
-            return commands;
         }
 
         private void EditMenu(bool isNew)
@@ -1326,28 +1497,48 @@ namespace Claim_Navigator
                         capi.ShowChatMessage(L("claim-not-found"));
                         return;
                     }
-                    foreach (string direction in Directions)
-                    {
-                        int amount = NumberField(direction);
-                        if (amount > 0 && amount < MinClaimSize)
-                        {
-                            capi.ShowChatMessage(L("expand-too-small", MinClaimSize));
-                            return;
-                        }
-                    }
-                    List<string> commands = DirectionCommands(selected);
-                    if (commands.Count == 0)
+                    List<string> sides = Directions.Where((string d) => NumberField(d) > 0).ToList();
+                    if (sides.Count == 0)
                     {
                         capi.ShowChatMessage(L("expand-nothing"));
                         return;
                     }
-                    // Смуги ставлять свої точки й одразу додаються — точки гравця після цього невідомі
-                    if (mod.Session != null)
+                    if (sides.Count > 1)
                     {
-                        mod.Session.Start = null;
-                        mod.Session.End = null;
+                        capi.ShowChatMessage(L("expand-one-side"));
+                        return;
                     }
-                    Run(commands);
+                    int amount = NumberField(sides[0]);
+                    if (amount < MinClaimSize)
+                    {
+                        capi.ShowChatMessage(L("expand-too-small", MinClaimSize));
+                        return;
+                    }
+                    int[][] box = DirectionSelection(selected, sides[0], amount);
+                    if (box == null)
+                    {
+                        capi.ShowChatMessage(L("expand-nothing"));
+                        return;
+                    }
+                    // Лише ставимо виділення — точки відомі, далі його можна розтягнути й додати
+                    EditSession session = mod.Session;
+                    if (session != null)
+                    {
+                        session.Start = null;
+                        session.End = null;
+                    }
+                    Run(new List<string>
+                    {
+                        $"/land claim start ={box[0][0]} ={box[0][1]} ={box[0][2]}",
+                        $"/land claim end ={box[1][0]} ={box[1][1]} ={box[1][2]}"
+                    }, null, null, delegate
+                    {
+                        if (session != null)
+                        {
+                            session.Start = box[0];
+                            session.End = box[1];
+                        }
+                    });
                 });
             }
             AddButton(composer, Row(ref y, width), L("create-claim-grow"), L("hint-create-claim-grow"), delegate
@@ -1402,15 +1593,18 @@ namespace Claim_Navigator
             AddButton(composer, Row(ref y, width), L("create-claim-add"), L("hint-create-claim-add"), delegate
             {
                 EditSession session = mod.Session;
-                if (!CheckPendingSize(session))
+                if (!CheckPending(session, isNew))
                 {
                     return;
                 }
+                int[] start = session?.Start;
+                int[] end = session?.End;
                 // Після вдалого add сервер сам стирає точки
                 Run(new List<string> { "/land claim add" }, null, null, delegate
                 {
                     if (session != null)
                     {
+                        RememberAdded(session, start, end);
                         session.Start = null;
                         session.End = null;
                         session.HasArea = true;
@@ -1418,7 +1612,8 @@ namespace Claim_Navigator
                 });
             });
             AddField(composer, Row(ref y, width), "claimName", L("create-claim-name"));
-            AddButton(composer, Row(ref y, width), L("create-claim-save"), isNew ? L("hint-create-claim-save") : L("hint-expand-save"), delegate
+            // У розширенні кнопка називається «Розширити»: додає виділення і зберігає приват
+            AddButton(composer, Row(ref y, width), isNew ? L("create-claim-save") : L("expand-save"), isNew ? L("hint-create-claim-save") : L("hint-expand-save"), delegate
             {
                 EditSession session = mod.Session;
                 string name = Field("claimName");
@@ -1426,18 +1621,19 @@ namespace Claim_Navigator
                 {
                     name = session?.Name ?? SaveName(selected);
                 }
-                if (!CheckPendingSize(session))
+                if (!CheckPending(session, isNew))
                 {
                     return;
                 }
                 List<string> commands = new List<string>();
-                // Завжди додаємо область перед збереженням: мод не знає напевно, чи прийняв сервер
-                // попереднє "Додати область" (воно могло не пройти через розмір чи перетин). Після
-                // вдалого add сервер сам скидає точки, тому зайвий add лише скаже "Start or End not marked" —
-                // тому add необов'язковий: його помилка не зупиняє збереження.
-                // Виняток — новий приват, у який ще нічого не додано: без цієї області зберігати
-                // нічого, і помилка add (наприклад, «замалий») має зупинити збереження
-                bool addRequired = isNew && session != null && !session.HasArea;
+                // Перед збереженням додаємо виділення. Якщо мод знає, що виділення є (точки ставилися
+                // через нього), add обов'язковий: його помилка (перетин, не торкається, замале) зупиняє
+                // збереження — приват лишається завантаженим з виділенням, вікно відкрите, можна виправити.
+                // Якщо точок мод не знає — add необов'язковий: виділення може й не бути, тоді сервер відповість
+                // "Start or End not marked", а зберегти все одно треба.
+                // Новий приват, у який ще нічого не додано, без цієї області зберігати нічого
+                bool pointsKnown = session?.Start != null && session.End != null;
+                bool addRequired = pointsKnown || (isNew && session != null && !session.HasArea);
                 commands.Add((addRequired ? "" : OptionalPrefix) + "/land claim add");
                 AppendSave(commands, isNew ? null : selected, name);
                 // Сесію закриваємо, лише якщо сервер справді зберіг приват: інакше можна
